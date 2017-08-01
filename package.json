@@ -1,0 +1,55 @@
+{
+  "name": "twilio_react_starter",
+  "version": "1.0.0",
+  "description": "Starter app for Twilio projects using react and webpack",
+  "main": "app.js",
+  "scripts": {
+    "dev-server": "webpack-dev-server --inline --progress --colors",
+    "start": "node server.js",
+    "test": "jest"
+  },
+  "keywords": [
+    "react",
+    "twilio",
+    "webpack"
+  ],
+  "author": "Brian Coyle @bcoyle73",
+  "license": "ISC",
+  "dependencies": {
+    "babel-polyfill": "^6.9.1",
+    "body-parser": "^1.15.0",
+    "cookie-parser": "^1.4.3",
+    "express": "^4.13.4",
+    "isomorphic-fetch": "^2.2.1",
+    "react": "^0.14.7",
+    "react-dom": "0.14",
+    "react-redux": "^4.4.5",
+    "redux": "^3.5.2",
+    "redux-logger": "^2.8.1",
+    "redux-thunk": "^2.2.0",
+    "twilio": "3.3.0",
+    "twilio-video": "^1.0.0"
+  },
+  "devDependencies": {
+    "babel-core": "^6.5.2",
+    "babel-jest": "^6.0.1",
+    "babel-loader": "^6.2.3",
+    "babel-preset-es2015": "^6.5.0",
+    "babel-preset-react": "^6.5.0",
+    "css-loader": "^0.23.1",
+    "jest-cli": "^0.8.2",
+    "react-addons-test-utils": "^0.14.7",
+    "style-loader": "^0.13.0",
+    "webpack": "^1.12.13",
+    "webpack-dev-server": "^1.14.1"
+  },
+  "jest": {
+    "scriptPreprocessor": "<rootDir>/node_modules/babel-jest",
+    "unmockedModulePathPatterns": [
+      "<rootDir>/node_modules/react",
+      "<rootDir>/node_modules/react-dom",
+      "<rootDir>/node_modules/react-addons-test-utils",
+      "<rootDir>/node_modules/fbjs"
+    ]
+  }
+}
