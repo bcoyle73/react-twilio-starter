@@ -11,7 +11,14 @@ router.post('/assignment', function(req, res) {
   var workerAttributes = JSON.parse(req.body.WorkerAttributes);
 
   console.log("Assignment called. Ignore this for now.  Accept client side");
-  
+  // If you were to accept server side return this JSON
+  // it's recommended to do client side
+  //res.send({
+  //  "instruction": "dequeue",
+  //  "timeout": "3",
+  //  "status_callback_url": "http://thinkvoice.ngrok.io/api/taskrouter/event"
+  //});
+
 
 });
 

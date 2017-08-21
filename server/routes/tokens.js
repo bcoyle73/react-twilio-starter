@@ -2,12 +2,14 @@ const express = require('express');
 const router = express.Router();
 const _ = require('lodash');
 
-const twilio = require('twilio');
 const ClientCapability = require('twilio').jwt.ClientCapability;
-const AccessToken = twilio.jwt.AccessToken;
+const AccessToken = require('twilio').jwt.AccessToken;
 const TaskRouterCapability = require('twilio').jwt.taskrouter.TaskRouterCapability;
+const Policy = TaskRouterCapability.Policy;
 const util = require('twilio').jwt.taskrouter.util;
-const version = 'v1'
+
+const TASKROUTER_BASE_URL = 'https://taskrouter.twilio.com';
+const version = 'v1';
 
 //const SyncGrant = AccessToken.SyncGrant;
 
@@ -24,39 +26,42 @@ router.get('/worker/:id', function(req, res) {
     channelId: worker,
     ttl: 28800});  // 60 * 60 * 8
 
-  const workerPolicies = util.defaultWorkerPolicies('v1', config.workspaceSid, worker);
-  workerPolicies.forEach(function(policy) {
-    //console.log(policy);
-    capability.addPolicy(policy);
-  });
+  // Event Bridge Policies
+  var eventBridgePolicies = util.defaultEventBridgePolicies(config.accountSid, worker);
 
-  const tasksPostPolicy = new twilio.jwt.taskrouter.TaskRouterCapability.Policy({
-       url: 'https://taskrouter.twilio.com/' + version + '/Workspaces/' + config.workspaceSid + '/Tasks/**',
-       method: 'POST',
-       allow: true
-   });
+  var workspacePolicies = [
+    // Workspace fetch Policy
+    buildWorkspacePolicy(),
+    // Workspace Activities Update Policy
+    buildWorkspacePolicy({ resources: ['Activities'], method: 'POST' }),
+    buildWorkspacePolicy({ resources: ['Activities'], method: 'GET' }),
+    // Workspace Activities Worker Reserations Policy
+    buildWorkspacePolicy({ resources: ['Workers', worker, 'Reservations', '**'], method: 'POST' }),
+    buildWorkspacePolicy({ resources: ['Workers', worker, 'Reservations', '**'], method: 'GET' }),
+    // Workspace Activities Worker  Policy
+    buildWorkspacePolicy({ resources: ['Workers', worker], method: 'GET' }),
+    buildWorkspacePolicy({ resources: ['Workers', worker], method: 'POST' }),
+  ];
 
-   capability.addPolicy(tasksPostPolicy);
-
-   const workerPostPolicy = new twilio.jwt.taskrouter.TaskRouterCapability.Policy({
-        url: 'https://taskrouter.twilio.com/' + version + '/Workspaces/' + config.workspaceSid + '/Workers/' + worker,
-        method: 'POST',
-        allow: true
-    });
-
-    capability.addPolicy(workerPostPolicy);
-
-
-  const eventBridgePolicies = util.defaultEventBridgePolicies(config.accountSid, worker);
-  eventBridgePolicies.forEach(function(policy) {
-    //console.log(policy);
+  eventBridgePolicies.concat(workspacePolicies).forEach(function (policy) {
     capability.addPolicy(policy);
   });
 
   res.send(capability.toJwt());
-
-
 });
+
+// Helper function to create Policy for TaskRouter token
+function buildWorkspacePolicy(options) {
+  options = options || {};
+  var resources = options.resources || [];
+  var urlComponents = [TASKROUTER_BASE_URL, version, 'Workspaces', config.workspaceSid]
+
+  return new Policy({
+    url: urlComponents.concat(resources).join('/'),
+    method: options.method || 'GET',
+    allow: true
+  });
+}
 
 router.get('/phone/:name', function(req, res) {
   const clientName = req.params.name;
@@ -108,4 +113,5 @@ router.get('/chat/:name/:endpoint', function(req, res) {
       token: accessToken.toJwt()
   });
 })
+
 module.exports = router;

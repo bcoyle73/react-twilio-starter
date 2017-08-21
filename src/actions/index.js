@@ -117,7 +117,7 @@ export function requestWorker(workerSid) {
           dispatch(reservationCreated(reservation))
           switch (reservation.task.taskChannelUniqueName) {
             case 'voice':
-              reservation.conference()
+              //reservation.conference()
               break
             case 'chat':
               //reservation.accept()
