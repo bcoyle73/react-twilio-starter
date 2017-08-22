@@ -26,26 +26,9 @@ router.post('/event', function(req, res) {
   console.log('*********************************************************')
   console.log('*********************************************************')
   console.log('*********************************************************')
-  console.log(req.body)
+  console.log(`${req.body.EventType} --- ${req.body.EventDescription}`)
 
   res.send({})
-})
-
-router.post('/callstatus/:sid', function(req, res) {
-  var client = new twilio.TaskRouterClient(config.accountSid, config.authToken, config.workspaceSid);
-  console.log(req.params.sid);
-  console.log("go update the worker");
-  client.workspace.workers(req.params.sid).update({
-      ActivitySid: "WA732e21fb4bd2a31df9ca88db74fefae8"
-  }, function(err, worker) {
-      if (err) {
-        console.log(err)
-      } else {
-        console.log(worker.attributes);
-      }
-  });
-  res.send({})
-
 })
 
 
