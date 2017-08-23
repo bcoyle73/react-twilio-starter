@@ -12,8 +12,11 @@ class AgentWorkSpaceContainer extends Component {
   }
 
   componentDidMount() {
+    // When this top level component loads get the worker sid from the URL
     const { dispatch } = this.props
-    dispatch(requestWorker('WK93520723dd84ec131798ee97c293f4b4'))
+    var url = new URL(window.location.href)
+    console.log(url.searchParams.get("worker"))
+    dispatch(requestWorker(url.searchParams.get("worker")))
   }
 
   componentWillUnmount() {
