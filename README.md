@@ -16,6 +16,7 @@ This application will serve as a getting started application for building a Twil
     export TWILIO_SYNC_SERVICE_SID=
     export TWILIO_SYNC_KEY=
     export TWILIO_SYNC_SECRET=
+    export BASE_URL=
 ```
 3. Run
 ```sh
