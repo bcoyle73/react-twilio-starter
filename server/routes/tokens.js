@@ -35,9 +35,14 @@ router.get('/worker/:id', function(req, res) {
     // Workspace Activities Update Policy
     buildWorkspacePolicy({ resources: ['Activities'], method: 'POST' }),
     buildWorkspacePolicy({ resources: ['Activities'], method: 'GET' }),
+    //
+    buildWorkspacePolicy({ resources: ['Tasks', '**'], method: 'POST' }),
+    buildWorkspacePolicy({ resources: ['Tasks', '**'], method: 'GET' }),
     // Workspace Activities Worker Reserations Policy
     buildWorkspacePolicy({ resources: ['Workers', worker, 'Reservations', '**'], method: 'POST' }),
     buildWorkspacePolicy({ resources: ['Workers', worker, 'Reservations', '**'], method: 'GET' }),
+    //
+
     // Workspace Activities Worker  Policy
     buildWorkspacePolicy({ resources: ['Workers', worker], method: 'GET' }),
     buildWorkspacePolicy({ resources: ['Workers', worker], method: 'POST' }),

@@ -13,4 +13,6 @@ config.syncServiceSid = process.env.TWILIO_SYNC_SERVICE_SID;
 config.syncKey = process.env.TWILIO_SYNC_KEY;
 config.syncSecret = process.env.TWILIO_SYNC_SECRET;
 
+config.baseUrl = process.env.BASE_URL;
+
 module.exports = config;

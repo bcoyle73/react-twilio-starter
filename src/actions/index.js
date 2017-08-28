@@ -117,7 +117,7 @@ export function requestWorker(workerSid) {
           dispatch(reservationCreated(reservation))
           switch (reservation.task.taskChannelUniqueName) {
             case 'voice':
-              //reservation.conference()
+              reservation.conference()
               break
             case 'chat':
               //reservation.accept()
@@ -127,6 +127,8 @@ export function requestWorker(workerSid) {
               reservation.accept()
               dispatch(videoRequest(reservation.task))
               break
+            case 'custom1':
+              // do nothing. server will accept
             default:
               reservation.reject()
           }
@@ -262,9 +264,18 @@ export function phoneCall() {
   return (dispatch, getState) => {
     const { phone } = getState()
     console.log("call clicked to " + phone.dialPadNumber)
-
     const agent_call = phone.device.connect({To: phone.dialPadNumber})
-    //dispatch(phoneDialCustomer('7034749718'))
+    /*
+    return fetch(`/api/calls/outbound/dial`,
+      {
+        method: "POST",
+        body: { "to": phone.dialPadNumber}
+      })
+      .then(response => response.json())
+      .then( json => {
+        console.log(json)
+      })
+    */
   }
 }
 
