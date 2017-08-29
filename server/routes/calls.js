@@ -17,6 +17,16 @@ router.post('/', function(req, res) {
 
 });
 
+router.post('/events', function(req, res) {
+  console.log('*********************************************************')
+  console.log('*********************************************************')
+  console.log('********************* CALL EVENT *****************************')
+  console.log(`${req.body}`)
+
+  res.send({})
+
+});
+
 router.post('/outbound/dial', function(req, res) {
 
   const client = require('twilio')(config.accountSid, config.authToken);
