@@ -2,6 +2,7 @@ const chat = (state = {
   client: false,
   isRegistered: false,
   currentChannel: [],
+  messages:[],
   videoParticipant: null
 }, action) => {
   console.log(action.type)
@@ -15,6 +16,13 @@ const chat = (state = {
         isRegistered: true,
         client: action.client
       });
+    case 'CHAT_ADD_MESSAGE':
+      return Object.assign({}, state, {
+        messages: [
+          ...state.messages,
+          action.message
+        ]
+      })
     case 'CHAT_UPDATE_CHANNEL':
       return Object.assign({}, state, {
         currentChannel: action.channel

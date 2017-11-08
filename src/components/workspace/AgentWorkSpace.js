@@ -1,6 +1,6 @@
 import React, { PropTypes } from 'react'
 import SimpleAgentStatusControlsContainer from '../taskrouter/SimpleAgentStatusControlsContainer';
-//import MessengerContainer from '../messages/MessengerContainer';
+import MessengerContainer from '../messages/MessengerContainer';
 import PhoneContainer from '../phone/PhoneContainer'
 import QueueStats from '../taskrouter/QueueStats';
 //import VideoDisplay from '../video/Video'
@@ -17,6 +17,10 @@ const AgentWorkSpace = ({channels = [], currInteraction, participant = {} }) => 
       break;
     case 'voice':
       component = <PhoneContainer key={1} />
+      break
+    case 'chat':
+      component = <MessengerContainer key={1} />
+      break
     default:
       component = <PhoneContainer key={1} />
   }

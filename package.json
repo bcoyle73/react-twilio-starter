@@ -30,7 +30,7 @@
     "redux": "^3.5.2",
     "redux-logger": "^2.8.1",
     "redux-thunk": "^2.2.0",
-    "twilio": "3.6.3",
+    "twilio": "^3.6.5",
     "twilio-video": "^1.0.0"
   },
   "devDependencies": {

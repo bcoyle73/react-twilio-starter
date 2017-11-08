@@ -4,6 +4,11 @@ var webpack = require('webpack');
 var port = 8080;
 var publicPath = '/assets/';
 
+
+new webpack.DefinePlugin({
+  BASE_URL: JSON.stringify("http://thinkvoice.ngrok.io")
+})
+
 module.exports = {
   entry: './src/main.js',
   output: {
@@ -19,6 +24,11 @@ module.exports = {
       }
     }
   },
+  plugins: [
+    new webpack.DefinePlugin({
+      BASE_URL: JSON.stringify(process.env.BASE_URL)
+    })
+  ],
   module: {
     loaders: [
       {

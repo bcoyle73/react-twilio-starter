@@ -1,7 +1,9 @@
 const phone = (state = {
   currentCall: false,
   device: {},
-  muted: false,
+  isMuted: false,
+  isRecording: false,
+  recordingLegSid: "",
   warning: "",
   isRegistered: false,
   dialPadNumber: "",
@@ -27,7 +29,16 @@ const phone = (state = {
       });
     case 'PHONE_MUTED':
       return Object.assign({}, state, {
-        muted: action.boolean
+        isMuted: action.boolean
+      });
+    case 'PHONE_RECORD_ON':
+      return Object.assign({}, state, {
+        isRecording: true,
+        recordingLegSid: action.callSid
+      });
+    case 'PHONE_RECORD_OFF':
+      return Object.assign({}, state, {
+        isRecording: false
       });
       case 'PHONE_WARNING':
         return Object.assign({}, state, {

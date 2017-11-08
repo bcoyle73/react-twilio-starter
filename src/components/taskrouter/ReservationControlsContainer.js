@@ -23,9 +23,9 @@ const mapDispatchToProps = (dispatch) => {
 }
 
 
-const SimpleAgentStatusControlsContainer = connect(
+const ReservationControlsContainer = connect(
   mapStateToProps,
   mapDispatchToProps
-)(SimpleAgentStatusControls)
+)(ReservationControls)
 
-export default SimpleAgentStatusControlsContainer
+export default ReservationControlsContainer

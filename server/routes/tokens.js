@@ -24,7 +24,7 @@ router.get('/worker/:id', function(req, res) {
     authToken: config.authToken,
     workspaceSid: config.workspaceSid,
     channelId: worker,
-    ttl: 28800});  // 60 * 60 * 8
+    ttl: 3600});  // 
 
   // Event Bridge Policies
   var eventBridgePolicies = util.defaultEventBridgePolicies(config.accountSid, worker);

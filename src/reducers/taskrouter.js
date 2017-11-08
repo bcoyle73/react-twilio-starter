@@ -5,6 +5,7 @@ const taskrouter = (state = {
   activities: [],
   channels: [],
   reservations: [],
+  conference: {sid: "", participants: {customer: ""}},
 }, action) => {
   console.log(action.type)
   switch (action.type) {
@@ -34,7 +35,8 @@ const taskrouter = (state = {
         reservations: [
           ...state.reservations,
           action.reservation
-        ]
+        ],
+        conference: action.reservation.task.attributes.conference
       })
     default:
       return state;

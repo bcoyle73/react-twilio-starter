@@ -44,18 +44,21 @@ function reservationsUpdated(data) {
   }
 }
 
+export function requestTaskComplete(reservation) {
+  return (dispatch) => {
+    console.log("I AM GOING TO COMPLETE " + reservation.taskSid)
+    console.log("ITS CURRENT ASSIGNMENT STATIS is " + reservation.reservationStatus)
+    reservation.task.complete((error, task) => {
+      if (error) {
+        console.log(error);
+      }
+    })
+  }
+}
 
 export function requestAcceptReservation() {
   return (dispatch, getState) => {
-    const { taskrouter } = getState()
-    let requestedActivitySid = getActivitySid(taskrouter.activities, newStateName)
-    taskrouter.worker.update("ActivitySid", requestedActivitySid, (error, worker) => {
-      if (error) {
-        console.log(error);
-      } else {
-        dispatch(workerUpdated(worker))
-      }
-    })
+
   }
 }
 
@@ -81,19 +84,24 @@ export function requestWorker(workerSid) {
       .then(response => response.text())
       .then(token => {
         console.log(token)
-        let worker = new Twilio.TaskRouter.Worker(token)
-        //worker.fetchChannels((error, channels) => {
-        //   dispatch(channelsUpdated(channels.data))
-        //})
+        let worker = new Twilio.TaskRouter.Worker(token, true, null, "WA564faeb747a2683f929ea700579eeed5", true )
+
         worker.activities.fetch((error, activityList) => {
            dispatch(activitiesUpdated(activityList.data))
+        })
+        worker.fetchReservations((error, reservations) => {
+           console.log(reservations.data, "RESERVATIONS")
+           if (reservations.data.length > 0) {
+             console.log("call into conf")
+           }
+
         })
         dispatch(workerUpdated(worker))
         worker.on("ready", (worker) => {
           dispatch(workerUpdated(worker))
-          dispatch(requestChat('bcoyle'))
-          dispatch(requestPhone('bcoyle'))
-          console.log(worker)
+          dispatch(requestPhone(worker.friendlyName))
+          dispatch(requestChat(worker.friendlyName))
+          console.log("worker obj", worker)
         })
         worker.on('activity.update', (worker) => {
           dispatch(workerUpdated(worker))
@@ -103,24 +111,40 @@ export function requestWorker(workerSid) {
           dispatch(requestWorker(workerSid))
         })
         worker.on('error', (error) => {
+          // You would want to provide the agent a notication of the error
           console.log("Websocket had an error: "+ error.response + " with message: "+error.message)
         })
         worker.on("disconnected", function() {
+          // You would want to provide the agent a notication of the error
           console.log("Websocket has disconnected");
         })
         worker.on('reservation.timeout', (reservation) => {
           console.log("Reservation Timed Out")
         })
+        worker.on('reservation.accepted', (reservation) => {
+          console.log("Reservation Accepted")
+          console.log(reservation, "RESERVATION ACCEPTED RESV")
+          dispatch(reservationCreated(reservation))
+          //dispatch(phoneRecord(reservation.task.attributes.conference.sid))
+        })
         worker.on('reservation.created', (reservation) => {
           console.log("Incoming reservation")
           console.log(reservation)
-          dispatch(reservationCreated(reservation))
           switch (reservation.task.taskChannelUniqueName) {
             case 'voice':
-              reservation.conference()
+              const customerLeg = reservation.task.attributes.call_sid
+              console.log(customerLeg, "customer call sid")
+              console.log("Create a conference for agent and customer")
+              var options = {
+                  "ConferenceStatusCallback": BASE_URL + "/api/calls/conference/events/" + customerLeg,
+                  "ConferenceStatusCallbackEvent": "start,leave,join,end",
+                  "EndConferenceOnExit": "false",
+                  "Beep": "false"
+              }
+              reservation.conference(null, null, null, null, null, options)
               break
             case 'chat':
-              //reservation.accept()
+              reservation.accept()
               dispatch(chatNewRequest(reservation.task))
               break
             case 'video':
@@ -128,7 +152,20 @@ export function requestWorker(workerSid) {
               dispatch(videoRequest(reservation.task))
               break
             case 'custom1':
-              // do nothing. server will accept
+              const sid = reservation.task.sid
+              const to = reservation.task.attributes.to
+              const from = reservation.task.attributes.from
+              reservation.call(
+                from,
+                BASE_URL + "/api/calls/outbound/dial/" + to + "/from/" + from + "/conf/" + sid,
+                BASE_URL + "/api/taskrouter/event",
+                "true",
+                "",
+                "",
+                BASE_URL + "/api/taskrouter/event"
+              )
+
+              break
             default:
               reservation.reject()
           }
@@ -206,6 +243,7 @@ export function requestPhone(clientName) {
           dispatch(phoneDeviceUpdated(device))
         })
         Twilio.Device.incoming(function(connection) {
+          // Accept the phone call automatically
           connection.accept();
         })
         Twilio.Device.connect((conn) => {
@@ -215,9 +253,11 @@ export function requestPhone(clientName) {
           conn.mute((boolean, connection) => {
             dispatch(phoneMuted(boolean))
           })
+          // Twilio Client Insights feature.  Warning are received here
           conn.on('warning', (warning) => {
             dispatch(phoneWarning(warning))
           })
+          // Twilio Client Insights feature.  Warning are cleared here
           conn.on('warning-cleared', (warning) => {
             dispatch(phoneWarning(" "))
           })
@@ -230,15 +270,48 @@ export function requestPhone(clientName) {
     }
 }
 
-export function requestHold(callSid) {
+export function phoneHold(confSid, callSid) {
   return(dispatch, getState) => {
-    return fetch(`/api/calls/hold/${callSid}`)
+    return fetch(`/api/calls/conference/${confSid}/hold/${callSid}/true`,{method: "POST"})
       .then(response => response.json())
       .then( json => {
         console.log(json)
       })
   }
+}
 
+export function phoneRecord(confSid, currentState) {
+  return(dispatch, getState) => {
+    return fetch(`/api/calls/record/${confSid}`,{method: "POST"})
+      .then(response => response.json())
+      .then( json => {
+        console.log(json)
+        dispatch(phoneRecordOn(json.callSid))
+      })
+  }
+}
+
+export function phoneRecordOn(callSid) {
+  return {
+    type: 'PHONE_RECORD_ON',
+    callSid: callSid
+  }
+}
+
+export function phoneRecordOff() {
+  return {
+    type: 'PHONE_RECORD_OFF'
+  }
+}
+
+export function requestConfTerminate(confSid) {
+  return(dispatch, getState) => {
+    return fetch(`/api/calls/conference/${confSid}/terminate`,{method: "POST"})
+      .then(response => response.json())
+      .then( json => {
+        console.log(json)
+      })
+  }
 }
 
 export function phoneMute() {
@@ -256,32 +329,42 @@ export function phoneButtonPushed(digit) {
     const { phone } = getState()
     console.log("dial pad clicked ", digit)
 
-    phone.currentCall.sendDigits()
+    phone.currentCall.sendDigits(digit)
   }
 }
 
 export function phoneCall() {
   return (dispatch, getState) => {
-    const { phone } = getState()
+    // Call the number that is currently in the number box
+    // pass the from and to number for the phone call as well as agent name
+    const { phone, taskrouter } = getState()
     console.log("call clicked to " + phone.dialPadNumber)
-    const agent_call = phone.device.connect({To: phone.dialPadNumber})
-    /*
-    return fetch(`/api/calls/outbound/dial`,
+
+    return fetch(`/api/taskrouter/outbound`,
       {
         method: "POST",
-        body: { "to": phone.dialPadNumber}
+        headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+        body:
+          JSON.stringify({
+          To: phone.dialPadNumber,
+          From: taskrouter.worker.attributes.phone_number,
+          Agent: taskrouter.worker.friendlyName
+        })
+
       })
       .then(response => response.json())
       .then( json => {
         console.log(json)
       })
-    */
+
   }
 }
 
 export function phoneDialCustomer(number) {
   return(dispatch, getState) => {
-    //return fetch(`/api/calls/confin/${number}`)
     return fetch(`/api/calls/confin`)
       .then(response => response.json())
       .then( json => {
@@ -307,13 +390,18 @@ export function chatClientUpdated(client) {
 
 export function requestChat(identity) {
   return (dispatch, getState) => {
-    // TODO: Dispatch action that is registering
     return fetch(`/api/tokens/chat/${identity}/browser`)
       .then(response => response.json())
       .then(json => {
         try {
           let chatClient = new Twilio.Chat.Client(json.token, {logLevel: 'debug'})
           dispatch(chatClientUpdated(chatClient))
+          chatClient.on('channelJoined', (channel) => {
+            console.log("joined chat channel")
+            channel.on('messageAdded', (message) => {
+              console.log("message added")
+            })
+          })
         }
         catch (e) {
           console.log(e)
@@ -329,10 +417,10 @@ function chatUpdateChannel(channel) {
   }
 }
 
-function videoParticipantConnected(participant) {
+function chatAddMessage(message) {
   return {
-    type: 'VIDEO_PARTICIPANT_CONNECTED',
-    participant: participant
+    type: 'CHAT_ADD_MESSAGE',
+    message: message
   }
 }
 
@@ -340,8 +428,27 @@ export function chatNewRequest(task) {
   return (dispatch, getState) => {
     const currState = getState()
     console.log(currState)
-    currState.chat.client.getChannelBySid('CH33ec0f0f793c4893a5131deff1080bdf')
-      .then(channel => dispatch(chatUpdateChannel(channel)))
+    currState.chat.client.getChannelBySid(task.attributes.chat_channel)
+      .then(channel => {
+        console.log(channel)
+        channel.on('memberJoined', (member) => {
+          console.log("JOINED")
+        })
+        channel.on('messageAdded', (message) => {
+          console.log(message)
+          dispatch(chatAddMessage({channel: message.channel.sid, author: message.author, body: message.body}))
+        })
+        channel.add(currState.taskrouter.worker.friendlyName)
+          .then(error => {
+            console.log(error)
+            channel.sendMessage("Brian is in the house")
+          })
+          .catch(error => {
+            console.log(error)
+          })
+        dispatch(chatUpdateChannel(channel))
+
+    })
 
   }
 }
@@ -370,6 +477,13 @@ export function videoRequest(task) {
         }
       })
 
+  }
+}
+
+function videoParticipantConnected(participant) {
+  return {
+    type: 'VIDEO_PARTICIPANT_CONNECTED',
+    participant: participant
   }
 }
 

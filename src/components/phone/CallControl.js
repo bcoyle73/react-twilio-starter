@@ -1,14 +1,30 @@
 import Button from '../common/Button.js';
 import React, { PropTypes } from 'react';
 
-const CallControl = ({status, mute, hangup, call, hold, muted, callSid}) => {
+const CallControl = ({
+  status,
+  mute,
+  hangup,
+  call,
+  hold,
+  record,
+  isMuted,
+  isRecording,
+  recordingCallSid,
+  callSid,
+  confSid,
+  reservation
+}) => {
   let buttons
+  // if status is open then we are on a call
   if (status == "open") {
     buttons =
       <div>
-        <Button onClick={hangup} classes={["hangup"]} buttonText="Hangup" />
-        <Button onClick={mute} classes={["mute"]} buttonText={muted ? 'Unmute' : 'Mute' } />
-        <Button onClick={hold} classes={["hold"]} buttonText="Hold" />
+        <Button onClick={e => hangup(reservation, confSid)} classes={["hangup"]} buttonText="Hangup" />
+        <Button onClick={mute} classes={["mute"]} buttonText={isMuted ? 'Unmute' : 'Mute' } />
+        <Button onClick={e => hold(confSid, callSid)} classes={["hold"]} buttonText="Hold" />
+        <Button onClick={e => record(confSid, recordingCallSid)} classes={["hold"]} buttonText={isRecording ? "Pause" : "Record"} />
+        <Button onClick={e => hold(confSid, callSid)} classes={["hold"]} buttonText="Transfer" />
       </div>
   } else {
     buttons = <Button onClick={e => call()} classes={["call"]} buttonText="Call" />
