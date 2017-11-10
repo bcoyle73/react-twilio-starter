@@ -70,8 +70,8 @@
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-	__webpack_require__(520);
-	__webpack_require__(524);
+	__webpack_require__(525);
+	__webpack_require__(529);
 
 	var store = (0, _configureStore2.default)();
 
@@ -31409,7 +31409,7 @@
 /* 502 */
 /***/ (function(module, exports) {
 
-	'use strict';
+	"use strict";
 
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
@@ -31423,7 +31423,8 @@
 	    worker: {},
 	    activities: [],
 	    channels: [],
-	    reservations: []
+	    reservations: [],
+	    conference: { sid: "", participants: { customer: "" } }
 	  };
 	  var action = arguments[1];
 
@@ -31452,7 +31453,8 @@
 	      });
 	    case 'RESERVATION_CREATED':
 	      return Object.assign({}, state, {
-	        reservations: [].concat(_toConsumableArray(state.reservations), [action.reservation])
+	        reservations: [].concat(_toConsumableArray(state.reservations), [action.reservation]),
+	        conference: action.reservation.task.attributes.conference
 	      });
 	    default:
 	      return state;
@@ -31474,7 +31476,9 @@
 	  var state = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {
 	    currentCall: false,
 	    device: {},
-	    muted: false,
+	    isMuted: false,
+	    isRecording: false,
+	    recordingLegSid: "",
 	    warning: "",
 	    isRegistered: false,
 	    dialPadNumber: ""
@@ -31502,7 +31506,16 @@
 	      });
 	    case 'PHONE_MUTED':
 	      return Object.assign({}, state, {
-	        muted: action.boolean
+	        isMuted: action.boolean
+	      });
+	    case 'PHONE_RECORD_ON':
+	      return Object.assign({}, state, {
+	        isRecording: true,
+	        recordingLegSid: action.callSid
+	      });
+	    case 'PHONE_RECORD_OFF':
+	      return Object.assign({}, state, {
+	        isRecording: false
 	      });
 	    case 'PHONE_WARNING':
 	      return Object.assign({}, state, {
@@ -31524,11 +31537,15 @@
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
+
+	function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
 	var chat = function chat() {
 	  var state = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {
 	    client: false,
 	    isRegistered: false,
 	    currentChannel: [],
+	    messages: [],
 	    videoParticipant: null
 	  };
 	  var action = arguments[1];
@@ -31543,6 +31560,10 @@
 	      return Object.assign({}, state, {
 	        isRegistered: true,
 	        client: action.client
+	      });
+	    case 'CHAT_ADD_MESSAGE':
+	      return Object.assign({}, state, {
+	        messages: [].concat(_toConsumableArray(state.messages), [action.message])
 	      });
 	    case 'CHAT_UPDATE_CHANNEL':
 	      return Object.assign({}, state, {
@@ -31604,9 +31625,12 @@
 	  _createClass(AgentWorkSpaceContainer, [{
 	    key: 'componentDidMount',
 	    value: function componentDidMount() {
+	      // When this top level component loads get the worker sid from the URL
 	      var dispatch = this.props.dispatch;
 
-	      dispatch((0, _actions.requestWorker)('WK93520723dd84ec131798ee97c293f4b4'));
+	      var url = new URL(window.location.href);
+	      console.log(url.searchParams.get("worker"));
+	      dispatch((0, _actions.requestWorker)(url.searchParams.get("worker")));
 	    }
 	  }, {
 	    key: 'componentWillUnmount',
@@ -31654,6 +31678,7 @@
 	exports.workerUpdated = workerUpdated;
 	exports.currentActivityFetch = currentActivityFetch;
 	exports.reservationsFetch = reservationsFetch;
+	exports.requestTaskComplete = requestTaskComplete;
 	exports.requestAcceptReservation = requestAcceptReservation;
 	exports.requestStateChange = requestStateChange;
 	exports.requestWorker = requestWorker;
@@ -31661,7 +31686,11 @@
 	exports.phoneDeviceUpdated = phoneDeviceUpdated;
 	exports.phoneConnectionUpdated = phoneConnectionUpdated;
 	exports.requestPhone = requestPhone;
-	exports.requestHold = requestHold;
+	exports.phoneHold = phoneHold;
+	exports.phoneRecord = phoneRecord;
+	exports.phoneRecordOn = phoneRecordOn;
+	exports.phoneRecordOff = phoneRecordOff;
+	exports.requestConfTerminate = requestConfTerminate;
 	exports.phoneMute = phoneMute;
 	exports.phoneButtonPushed = phoneButtonPushed;
 	exports.phoneCall = phoneCall;
@@ -31722,26 +31751,26 @@
 	  };
 	}
 
-	function requestAcceptReservation() {
-	  return function (dispatch, getState) {
-	    var _getState = getState(),
-	        taskrouter = _getState.taskrouter;
-
-	    var requestedActivitySid = getActivitySid(taskrouter.activities, newStateName);
-	    taskrouter.worker.update("ActivitySid", requestedActivitySid, function (error, worker) {
+	function requestTaskComplete(reservation) {
+	  return function (dispatch) {
+	    console.log("I AM GOING TO COMPLETE " + reservation.taskSid);
+	    console.log("ITS CURRENT ASSIGNMENT STATIS is " + reservation.reservationStatus);
+	    reservation.task.complete(function (error, task) {
 	      if (error) {
 	        console.log(error);
-	      } else {
-	        dispatch(workerUpdated(worker));
 	      }
 	    });
 	  };
 	}
 
+	function requestAcceptReservation() {
+	  return function (dispatch, getState) {};
+	}
+
 	function requestStateChange(newStateName) {
 	  return function (dispatch, getState) {
-	    var _getState2 = getState(),
-	        taskrouter = _getState2.taskrouter;
+	    var _getState = getState(),
+	        taskrouter = _getState.taskrouter;
 
 	    var requestedActivitySid = getActivitySid(taskrouter.activities, newStateName);
 	    taskrouter.worker.update("ActivitySid", requestedActivitySid, function (error, worker) {
@@ -31762,19 +31791,23 @@
 	      return response.text();
 	    }).then(function (token) {
 	      console.log(token);
-	      var worker = new Twilio.TaskRouter.Worker(token);
-	      //worker.fetchChannels((error, channels) => {
-	      //   dispatch(channelsUpdated(channels.data))
-	      //})
+	      var worker = new Twilio.TaskRouter.Worker(token, true, null, "WA564faeb747a2683f929ea700579eeed5", true);
+
 	      worker.activities.fetch(function (error, activityList) {
 	        dispatch(activitiesUpdated(activityList.data));
+	      });
+	      worker.fetchReservations(function (error, reservations) {
+	        console.log(reservations.data, "RESERVATIONS");
+	        if (reservations.data.length > 0) {
+	          console.log("call into conf");
+	        }
 	      });
 	      dispatch(workerUpdated(worker));
 	      worker.on("ready", function (worker) {
 	        dispatch(workerUpdated(worker));
-	        dispatch(requestChat('bcoyle'));
-	        dispatch(requestPhone('bcoyle'));
-	        console.log(worker);
+	        dispatch(requestPhone(worker.friendlyName));
+	        dispatch(requestChat(worker.friendlyName));
+	        console.log("worker obj", worker);
 	      });
 	      worker.on('activity.update', function (worker) {
 	        dispatch(workerUpdated(worker));
@@ -31784,29 +31817,52 @@
 	        dispatch(requestWorker(workerSid));
 	      });
 	      worker.on('error', function (error) {
+	        // You would want to provide the agent a notication of the error
 	        console.log("Websocket had an error: " + error.response + " with message: " + error.message);
 	      });
 	      worker.on("disconnected", function () {
+	        // You would want to provide the agent a notication of the error
 	        console.log("Websocket has disconnected");
 	      });
 	      worker.on('reservation.timeout', function (reservation) {
 	        console.log("Reservation Timed Out");
 	      });
+	      worker.on('reservation.accepted', function (reservation) {
+	        console.log("Reservation Accepted");
+	        console.log(reservation, "RESERVATION ACCEPTED RESV");
+	        dispatch(reservationCreated(reservation));
+	        //dispatch(phoneRecord(reservation.task.attributes.conference.sid))
+	      });
 	      worker.on('reservation.created', function (reservation) {
 	        console.log("Incoming reservation");
 	        console.log(reservation);
-	        dispatch(reservationCreated(reservation));
 	        switch (reservation.task.taskChannelUniqueName) {
 	          case 'voice':
-	            reservation.conference();
+	            var customerLeg = reservation.task.attributes.call_sid;
+	            console.log(customerLeg, "customer call sid");
+	            console.log("Create a conference for agent and customer");
+	            var options = {
+	              "ConferenceStatusCallback": (undefined) + "/api/calls/conference/events/" + customerLeg,
+	              "ConferenceStatusCallbackEvent": "start,leave,join,end",
+	              "EndConferenceOnExit": "false",
+	              "Beep": "false"
+	            };
+	            reservation.conference(null, null, null, null, null, options);
 	            break;
 	          case 'chat':
-	            //reservation.accept()
+	            reservation.accept();
 	            dispatch(chatNewRequest(reservation.task));
 	            break;
 	          case 'video':
 	            reservation.accept();
 	            dispatch(videoRequest(reservation.task));
+	            break;
+	          case 'custom1':
+	            var sid = reservation.task.sid;
+	            var to = reservation.task.attributes.to;
+	            var from = reservation.task.attributes.from;
+	            reservation.call(from, (undefined) + "/api/calls/outbound/dial/" + to + "/from/" + from + "/conf/" + sid, (undefined) + "/api/taskrouter/event", "true", "", "", (undefined) + "/api/taskrouter/event");
+
 	            break;
 	          default:
 	            reservation.reject();
@@ -31883,6 +31939,7 @@
 	        dispatch(phoneDeviceUpdated(device));
 	      });
 	      Twilio.Device.incoming(function (connection) {
+	        // Accept the phone call automatically
 	        connection.accept();
 	      });
 	      Twilio.Device.connect(function (conn) {
@@ -31892,9 +31949,11 @@
 	        conn.mute(function (boolean, connection) {
 	          dispatch(phoneMuted(boolean));
 	        });
+	        // Twilio Client Insights feature.  Warning are received here
 	        conn.on('warning', function (warning) {
 	          dispatch(phoneWarning(warning));
 	        });
+	        // Twilio Client Insights feature.  Warning are cleared here
 	        conn.on('warning-cleared', function (warning) {
 	          dispatch(phoneWarning(" "));
 	        });
@@ -31907,9 +31966,43 @@
 	  };
 	}
 
-	function requestHold(callSid) {
+	function phoneHold(confSid, callSid) {
 	  return function (dispatch, getState) {
-	    return (0, _isomorphicFetch2.default)('/api/calls/hold/' + callSid).then(function (response) {
+	    return (0, _isomorphicFetch2.default)('/api/calls/conference/' + confSid + '/hold/' + callSid + '/true', { method: "POST" }).then(function (response) {
+	      return response.json();
+	    }).then(function (json) {
+	      console.log(json);
+	    });
+	  };
+	}
+
+	function phoneRecord(confSid, currentState) {
+	  return function (dispatch, getState) {
+	    return (0, _isomorphicFetch2.default)('/api/calls/record/' + confSid, { method: "POST" }).then(function (response) {
+	      return response.json();
+	    }).then(function (json) {
+	      console.log(json);
+	      dispatch(phoneRecordOn(json.callSid));
+	    });
+	  };
+	}
+
+	function phoneRecordOn(callSid) {
+	  return {
+	    type: 'PHONE_RECORD_ON',
+	    callSid: callSid
+	  };
+	}
+
+	function phoneRecordOff() {
+	  return {
+	    type: 'PHONE_RECORD_OFF'
+	  };
+	}
+
+	function requestConfTerminate(confSid) {
+	  return function (dispatch, getState) {
+	    return (0, _isomorphicFetch2.default)('/api/calls/conference/' + confSid + '/terminate', { method: "POST" }).then(function (response) {
 	      return response.json();
 	    }).then(function (json) {
 	      console.log(json);
@@ -31919,8 +32012,8 @@
 
 	function phoneMute() {
 	  return function (dispatch, getState) {
-	    var _getState3 = getState(),
-	        phone = _getState3.phone;
+	    var _getState2 = getState(),
+	        phone = _getState2.phone;
 
 	    console.log("mute clicked");
 	    console.log("Current call is muted? " + phone.currentCall.isMuted());
@@ -31931,30 +32024,47 @@
 
 	function phoneButtonPushed(digit) {
 	  return function (dispatch, getState) {
-	    var _getState4 = getState(),
-	        phone = _getState4.phone;
+	    var _getState3 = getState(),
+	        phone = _getState3.phone;
 
 	    console.log("dial pad clicked ", digit);
 
-	    phone.currentCall.sendDigits();
+	    phone.currentCall.sendDigits(digit);
 	  };
 	}
 
 	function phoneCall() {
 	  return function (dispatch, getState) {
-	    var _getState5 = getState(),
-	        phone = _getState5.phone;
+	    // Call the number that is currently in the number box
+	    // pass the from and to number for the phone call as well as agent name
+	    var _getState4 = getState(),
+	        phone = _getState4.phone,
+	        taskrouter = _getState4.taskrouter;
 
 	    console.log("call clicked to " + phone.dialPadNumber);
 
-	    var agent_call = phone.device.connect({ To: phone.dialPadNumber });
-	    //dispatch(phoneDialCustomer('7034749718'))
+	    return (0, _isomorphicFetch2.default)('/api/taskrouter/outbound', {
+	      method: "POST",
+	      headers: {
+	        'Accept': 'application/json',
+	        'Content-Type': 'application/json'
+	      },
+	      body: JSON.stringify({
+	        To: phone.dialPadNumber,
+	        From: taskrouter.worker.attributes.phone_number,
+	        Agent: taskrouter.worker.friendlyName
+	      })
+
+	    }).then(function (response) {
+	      return response.json();
+	    }).then(function (json) {
+	      console.log(json);
+	    });
 	  };
 	}
 
 	function phoneDialCustomer(number) {
 	  return function (dispatch, getState) {
-	    //return fetch(`/api/calls/confin/${number}`)
 	    return (0, _isomorphicFetch2.default)('/api/calls/confin').then(function (response) {
 	      return response.json();
 	    }).then(function (json) {
@@ -31965,8 +32075,8 @@
 
 	function phoneHangup() {
 	  return function (dispatch, getState) {
-	    var _getState6 = getState(),
-	        phone = _getState6.phone;
+	    var _getState5 = getState(),
+	        phone = _getState5.phone;
 
 	    phone.currentCall.disconnect();
 	  };
@@ -31981,13 +32091,18 @@
 
 	function requestChat(identity) {
 	  return function (dispatch, getState) {
-	    // TODO: Dispatch action that is registering
 	    return (0, _isomorphicFetch2.default)('/api/tokens/chat/' + identity + '/browser').then(function (response) {
 	      return response.json();
 	    }).then(function (json) {
 	      try {
 	        var chatClient = new Twilio.Chat.Client(json.token, { logLevel: 'debug' });
 	        dispatch(chatClientUpdated(chatClient));
+	        chatClient.on('channelJoined', function (channel) {
+	          console.log("joined chat channel");
+	          channel.on('messageAdded', function (message) {
+	            console.log("message added");
+	          });
+	        });
 	      } catch (e) {
 	        console.log(e);
 	      }
@@ -32002,10 +32117,10 @@
 	  };
 	}
 
-	function videoParticipantConnected(participant) {
+	function chatAddMessage(message) {
 	  return {
-	    type: 'VIDEO_PARTICIPANT_CONNECTED',
-	    participant: participant
+	    type: 'CHAT_ADD_MESSAGE',
+	    message: message
 	  };
 	}
 
@@ -32013,8 +32128,22 @@
 	  return function (dispatch, getState) {
 	    var currState = getState();
 	    console.log(currState);
-	    currState.chat.client.getChannelBySid('CH33ec0f0f793c4893a5131deff1080bdf').then(function (channel) {
-	      return dispatch(chatUpdateChannel(channel));
+	    currState.chat.client.getChannelBySid(task.attributes.chat_channel).then(function (channel) {
+	      console.log(channel);
+	      channel.on('memberJoined', function (member) {
+	        console.log("JOINED");
+	      });
+	      channel.on('messageAdded', function (message) {
+	        console.log(message);
+	        dispatch(chatAddMessage({ channel: message.channel.sid, author: message.author, body: message.body }));
+	      });
+	      channel.add(currState.taskrouter.worker.friendlyName).then(function (error) {
+	        console.log(error);
+	        channel.sendMessage("Brian is in the house");
+	      }).catch(function (error) {
+	        console.log(error);
+	      });
+	      dispatch(chatUpdateChannel(channel));
 	    });
 	  };
 	}
@@ -32039,6 +32168,13 @@
 	        console.log(e);
 	      }
 	    });
+	  };
+	}
+
+	function videoParticipantConnected(participant) {
+	  return {
+	    type: 'VIDEO_PARTICIPANT_CONNECTED',
+	    participant: participant
 	  };
 	}
 
@@ -32545,11 +32681,15 @@
 
 	var _SimpleAgentStatusControlsContainer2 = _interopRequireDefault(_SimpleAgentStatusControlsContainer);
 
-	var _PhoneContainer = __webpack_require__(513);
+	var _MessengerContainer = __webpack_require__(513);
+
+	var _MessengerContainer2 = _interopRequireDefault(_MessengerContainer);
+
+	var _PhoneContainer = __webpack_require__(518);
 
 	var _PhoneContainer2 = _interopRequireDefault(_PhoneContainer);
 
-	var _QueueStats = __webpack_require__(518);
+	var _QueueStats = __webpack_require__(523);
 
 	var _QueueStats2 = _interopRequireDefault(_QueueStats);
 
@@ -32558,7 +32698,6 @@
 	//import VideoDisplay from '../video/Video'
 	//import VideoPlayer from '../video/VideoPlayer'
 
-	//import MessengerContainer from '../messages/MessengerContainer';
 	var AgentWorkSpace = function AgentWorkSpace(_ref) {
 	  var _ref$channels = _ref.channels,
 	      channels = _ref$channels === undefined ? [] : _ref$channels,
@@ -32576,6 +32715,10 @@
 	      break;
 	    case 'voice':
 	      component = _react2.default.createElement(_PhoneContainer2.default, { key: 1 });
+	      break;
+	    case 'chat':
+	      component = _react2.default.createElement(_MessengerContainer2.default, { key: 1 });
+	      break;
 	    default:
 	      component = _react2.default.createElement(_PhoneContainer2.default, { key: 1 });
 	  }
@@ -32787,7 +32930,194 @@
 
 	var _react2 = _interopRequireDefault(_react);
 
-	var _phone = __webpack_require__(514);
+	var _Messenger = __webpack_require__(514);
+
+	var _Messenger2 = _interopRequireDefault(_Messenger);
+
+	var _reactRedux = __webpack_require__(455);
+
+	var _actions = __webpack_require__(506);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	var mapStateToProps = function mapStateToProps(state) {
+	  var chat = state.chat;
+
+
+	  return {
+	    messages: chat.messages
+	  };
+	};
+
+	var MessageBoxContainer = (0, _reactRedux.connect)(mapStateToProps)(_Messenger2.default);
+
+	exports.default = MessageBoxContainer;
+
+/***/ }),
+/* 514 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _MessageBox = __webpack_require__(515);
+
+	var _MessageBox2 = _interopRequireDefault(_MessageBox);
+
+	var _MessageEntry = __webpack_require__(516);
+
+	var _MessageEntry2 = _interopRequireDefault(_MessageEntry);
+
+	var _MessageControl = __webpack_require__(517);
+
+	var _MessageControl2 = _interopRequireDefault(_MessageControl);
+
+	var _react = __webpack_require__(297);
+
+	var _react2 = _interopRequireDefault(_react);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	var Messenger = function Messenger(_ref) {
+	  var messages = _ref.messages;
+	  return _react2.default.createElement(
+	    'div',
+	    { className: 'messages' },
+	    _react2.default.createElement(_MessageBox2.default, { messages: messages }),
+	    _react2.default.createElement(_MessageEntry2.default, null),
+	    _react2.default.createElement(_MessageControl2.default, null)
+	  );
+	};
+
+	Messenger.propTypes = {};
+
+	exports.default = Messenger;
+
+/***/ }),
+/* 515 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _react = __webpack_require__(297);
+
+	var _react2 = _interopRequireDefault(_react);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	var MessageBox = function MessageBox(_ref) {
+	  var messages = _ref.messages;
+
+	  var thread = messages.map(function (message) {
+	    return _react2.default.createElement(
+	      "div",
+	      { className: "messagecardthread-inbound" },
+	      _react2.default.createElement(
+	        "span",
+	        { className: "message-text" },
+	        "message.body"
+	      )
+	    );
+	  });
+	  return _react2.default.createElement(
+	    "div",
+	    { className: "message-container" },
+	    thread
+	  );
+	};
+
+	MessageBox.propTypes = {};
+
+	MessageBox.defaultProps = { messages: [] };
+
+	exports.default = MessageBox;
+
+/***/ }),
+/* 516 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _react = __webpack_require__(297);
+
+	var _react2 = _interopRequireDefault(_react);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	var MessageEntry = function MessageEntry() {
+	  return _react2.default.createElement(
+	    "div",
+	    { className: "message-entry" },
+	    _react2.default.createElement("input", { placeholder: "Text Message" })
+	  );
+	};
+
+	MessageEntry.propTypes = {};
+
+	exports.default = MessageEntry;
+
+/***/ }),
+/* 517 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _Button = __webpack_require__(512);
+
+	var _Button2 = _interopRequireDefault(_Button);
+
+	var _react = __webpack_require__(297);
+
+	var _react2 = _interopRequireDefault(_react);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	var MessageControl = function MessageControl() {
+	  return _react2.default.createElement(
+	    'div',
+	    { id: 'action-button-container' },
+	    _react2.default.createElement(
+	      'div',
+	      { id: 'action-buttons' },
+	      _react2.default.createElement(_Button2.default, { classes: ["call"], buttonText: 'Send' })
+	    )
+	  );
+	};
+
+	MessageControl.propTypes = {};
+
+	exports.default = MessageControl;
+
+/***/ }),
+/* 518 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _react = __webpack_require__(297);
+
+	var _react2 = _interopRequireDefault(_react);
+
+	var _phone = __webpack_require__(519);
 
 	var _phone2 = _interopRequireDefault(_phone);
 
@@ -32798,13 +33128,26 @@
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	var mapStateToProps = function mapStateToProps(state) {
-	  var phone = state.phone;
+	  var phone = state.phone,
+	      taskrouter = state.taskrouter;
+
+	  var conf = "";
+	  var caller = "";
+	  if (taskrouter.conference) {
+	    conf = taskrouter.conference.sid;
+	    caller = taskrouter.conference.participants.customer;
+	  }
+	  var reservation = taskrouter.reservations[0];
 
 	  console.log(phone.currentCall);
 	  return {
 	    status: phone.currentCall._status,
-	    muted: phone.muted,
-	    callSid: "123",
+	    isMuted: phone.isMuted,
+	    isRecording: phone.isRecording,
+	    recordingCallSid: phone.recordingLegSid,
+	    callSid: caller,
+	    confSid: conf,
+	    reservation: reservation,
 	    warning: phone.warning
 	  };
 	};
@@ -32814,11 +33157,17 @@
 	    onMuteClick: function onMuteClick() {
 	      dispatch((0, _actions.phoneMute)());
 	    },
-	    onHangupClick: function onHangupClick() {
+	    onHangupClick: function onHangupClick(reservation, confSid) {
+	      console.log(reservation);
 	      dispatch((0, _actions.phoneHangup)());
+	      //dispatch(requestTaskComplete(reservation))
+	      dispatch((0, _actions.requestConfTerminate)(confSid));
 	    },
-	    onHoldClick: function onHoldClick() {
-	      dispatch((0, _actions.phoneHold)());
+	    onHoldClick: function onHoldClick(confSid, callSid) {
+	      dispatch((0, _actions.phoneHold)(confSid, callSid));
+	    },
+	    onRecordClick: function onRecordClick(confSid, callSid) {
+	      dispatch((0, _actions.phoneHold)(confSid, callSid));
 	    },
 	    onCallClick: function onCallClick() {
 	      dispatch((0, _actions.phoneCall)());
@@ -32837,7 +33186,7 @@
 	exports.default = PhoneContainer;
 
 /***/ }),
-/* 514 */
+/* 519 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -32846,15 +33195,15 @@
 	  value: true
 	});
 
-	var _NumberEntry = __webpack_require__(515);
+	var _NumberEntry = __webpack_require__(520);
 
 	var _NumberEntry2 = _interopRequireDefault(_NumberEntry);
 
-	var _KeyPad = __webpack_require__(516);
+	var _KeyPad = __webpack_require__(521);
 
 	var _KeyPad2 = _interopRequireDefault(_KeyPad);
 
-	var _CallControl = __webpack_require__(517);
+	var _CallControl = __webpack_require__(522);
 
 	var _CallControl2 = _interopRequireDefault(_CallControl);
 
@@ -32872,14 +33221,19 @@
 	      onHangupClick = _ref.onHangupClick,
 	      onCallClick = _ref.onCallClick,
 	      onHoldClick = _ref.onHoldClick,
-	      muted = _ref.muted,
-	      callSid = _ref.callSid;
+	      onRecordClick = _ref.onRecordClick,
+	      isMuted = _ref.isMuted,
+	      isRecording = _ref.isRecording,
+	      recordingCallSid = _ref.recordingCallSid,
+	      callSid = _ref.callSid,
+	      confSid = _ref.confSid,
+	      reservation = _ref.reservation;
 	  return _react2.default.createElement(
 	    'div',
 	    { id: 'dialer' },
 	    _react2.default.createElement(_NumberEntry2.default, { entry: onNumberEntryChange }),
 	    _react2.default.createElement(_KeyPad2.default, { buttonPress: onKeyPadNumberClick }),
-	    _react2.default.createElement(_CallControl2.default, { call: onCallClick, status: status, muted: muted, hangup: onHangupClick, mute: onMuteClick, hold: onHoldClick, callSid: callSid })
+	    _react2.default.createElement(_CallControl2.default, { call: onCallClick, status: status, isMuted: isMuted, recordingCallSid: recordingCallSid, isRecording: isRecording, hangup: onHangupClick, mute: onMuteClick, hold: onHoldClick, record: onRecordClick, callSid: callSid, confSid: confSid, reservation: reservation })
 	  );
 	};
 
@@ -32888,7 +33242,7 @@
 	exports.default = Phone;
 
 /***/ }),
-/* 515 */
+/* 520 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -32921,7 +33275,7 @@
 	exports.default = NumberEntry;
 
 /***/ }),
-/* 516 */
+/* 521 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -32969,7 +33323,7 @@
 	exports.default = KeyPad;
 
 /***/ }),
-/* 517 */
+/* 522 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -32994,17 +33348,33 @@
 	      hangup = _ref.hangup,
 	      call = _ref.call,
 	      hold = _ref.hold,
-	      muted = _ref.muted,
-	      callSid = _ref.callSid;
+	      record = _ref.record,
+	      isMuted = _ref.isMuted,
+	      isRecording = _ref.isRecording,
+	      recordingCallSid = _ref.recordingCallSid,
+	      callSid = _ref.callSid,
+	      confSid = _ref.confSid,
+	      reservation = _ref.reservation;
 
 	  var buttons = void 0;
+	  // if status is open then we are on a call
 	  if (status == "open") {
 	    buttons = _react2.default.createElement(
 	      'div',
 	      null,
-	      _react2.default.createElement(_Button2.default, { onClick: hangup, classes: ["hangup"], buttonText: 'Hangup' }),
-	      _react2.default.createElement(_Button2.default, { onClick: mute, classes: ["mute"], buttonText: muted ? 'Unmute' : 'Mute' }),
-	      _react2.default.createElement(_Button2.default, { onClick: hold, classes: ["hold"], buttonText: 'Hold' })
+	      _react2.default.createElement(_Button2.default, { onClick: function onClick(e) {
+	          return hangup(reservation, confSid);
+	        }, classes: ["hangup"], buttonText: 'Hangup' }),
+	      _react2.default.createElement(_Button2.default, { onClick: mute, classes: ["mute"], buttonText: isMuted ? 'Unmute' : 'Mute' }),
+	      _react2.default.createElement(_Button2.default, { onClick: function onClick(e) {
+	          return hold(confSid, callSid);
+	        }, classes: ["hold"], buttonText: 'Hold' }),
+	      _react2.default.createElement(_Button2.default, { onClick: function onClick(e) {
+	          return record(confSid, recordingCallSid);
+	        }, classes: ["hold"], buttonText: isRecording ? "Pause" : "Record" }),
+	      _react2.default.createElement(_Button2.default, { onClick: function onClick(e) {
+	          return hold(confSid, callSid);
+	        }, classes: ["hold"], buttonText: 'Transfer' })
 	    );
 	  } else {
 	    buttons = _react2.default.createElement(_Button2.default, { onClick: function onClick(e) {
@@ -33033,7 +33403,7 @@
 	exports.default = CallControl;
 
 /***/ }),
-/* 518 */
+/* 523 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -33046,7 +33416,7 @@
 
 	var _react2 = _interopRequireDefault(_react);
 
-	var _StatBox = __webpack_require__(519);
+	var _StatBox = __webpack_require__(524);
 
 	var _StatBox2 = _interopRequireDefault(_StatBox);
 
@@ -33070,7 +33440,7 @@
 	exports.default = QueueStats;
 
 /***/ }),
-/* 519 */
+/* 524 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -33118,16 +33488,16 @@
 	exports.default = StatBox;
 
 /***/ }),
-/* 520 */
+/* 525 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	// style-loader: Adds some css to the DOM by adding a <style> tag
 
 	// load the styles
-	var content = __webpack_require__(521);
+	var content = __webpack_require__(526);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	// add the styles to the DOM
-	var update = __webpack_require__(523)(content, {});
+	var update = __webpack_require__(528)(content, {});
 	if(content.locals) module.exports = content.locals;
 	// Hot Module Replacement
 	if(false) {
@@ -33144,10 +33514,10 @@
 	}
 
 /***/ }),
-/* 521 */
+/* 526 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(522)();
+	exports = module.exports = __webpack_require__(527)();
 	// imports
 
 
@@ -33158,7 +33528,7 @@
 
 
 /***/ }),
-/* 522 */
+/* 527 */
 /***/ (function(module, exports) {
 
 	/*
@@ -33214,7 +33584,7 @@
 
 
 /***/ }),
-/* 523 */
+/* 528 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	/*
@@ -33466,16 +33836,16 @@
 
 
 /***/ }),
-/* 524 */
+/* 529 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	// style-loader: Adds some css to the DOM by adding a <style> tag
 
 	// load the styles
-	var content = __webpack_require__(525);
+	var content = __webpack_require__(530);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	// add the styles to the DOM
-	var update = __webpack_require__(523)(content, {});
+	var update = __webpack_require__(528)(content, {});
 	if(content.locals) module.exports = content.locals;
 	// Hot Module Replacement
 	if(false) {
@@ -33492,10 +33862,10 @@
 	}
 
 /***/ }),
-/* 525 */
+/* 530 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(522)();
+	exports = module.exports = __webpack_require__(527)();
 	// imports
 
 

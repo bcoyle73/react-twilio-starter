@@ -12,7 +12,7 @@ new webpack.DefinePlugin({
 module.exports = {
   entry: './src/main.js',
   output: {
-    path: path.resolve(__dirname, 'build'),
+    path: path.resolve(__dirname, 'build/assets'),
     filename: 'app.js',
   },
   devServer: {
