@@ -13,6 +13,7 @@ module.exports = {
   entry: './src/main.js',
   output: {
     path: path.resolve(__dirname, 'build/assets'),
+    publicPath: "/assets/",
     filename: 'app.js',
   },
   devServer: {

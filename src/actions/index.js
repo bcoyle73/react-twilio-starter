@@ -80,11 +80,17 @@ export function requestWorker(workerSid) {
   return (dispatch, getState) => {
     console.log(workerSid)
     dispatch(registerWorker())
-    return fetch(`/api/tokens/worker/${workerSid}`)
-      .then(response => response.text())
-      .then(token => {
-        console.log(token)
-        let worker = new Twilio.TaskRouter.Worker(token, true, null, "WA564faeb747a2683f929ea700579eeed5", true )
+    return fetch('https://axiomatic-wilderness-2842.twil.io/token-taskrouter', {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: "workerSid="+workerSid
+      })
+      .then(response => response.json())
+      .then(json => {
+        console.log(json)
+        let worker = new Twilio.TaskRouter.Worker(json.token, true, null, "WA564faeb747a2683f929ea700579eeed5", true )
 
         worker.activities.fetch((error, activityList) => {
            dispatch(activitiesUpdated(activityList.data))

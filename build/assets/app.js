@@ -31787,11 +31787,20 @@
 	  return function (dispatch, getState) {
 	    console.log(workerSid);
 	    dispatch(registerWorker());
-	    return (0, _isomorphicFetch2.default)('/api/tokens/worker/' + workerSid).then(function (response) {
+	    return (0, _isomorphicFetch2.default)('https://axiomatic-wilderness-2842.twil.io/token-taskrouter', {
+	      method: "POST",
+	      mode: "no-cors",
+	      headers: {
+	        "Content-Type": "application/json"
+	      },
+	      body: JSON.stringify({
+	        workerSid: workerSid
+	      })
+	    }).then(function (response) {
 	      return response.text();
-	    }).then(function (token) {
-	      console.log(token);
-	      var worker = new Twilio.TaskRouter.Worker(token, true, null, "WA564faeb747a2683f929ea700579eeed5", true);
+	    }).then(function (json) {
+	      console.log(json);
+	      var worker = new Twilio.TaskRouter.Worker(json.token, true, null, "WA564faeb747a2683f929ea700579eeed5", true);
 
 	      worker.activities.fetch(function (error, activityList) {
 	        dispatch(activitiesUpdated(activityList.data));
@@ -31842,7 +31851,7 @@
 	            console.log(customerLeg, "customer call sid");
 	            console.log("Create a conference for agent and customer");
 	            var options = {
-	              "ConferenceStatusCallback": (undefined) + "/api/calls/conference/events/" + customerLeg,
+	              "ConferenceStatusCallback": ("http://thinkvoice.ngrok.io") + "/api/calls/conference/events/" + customerLeg,
 	              "ConferenceStatusCallbackEvent": "start,leave,join,end",
 	              "EndConferenceOnExit": "false",
 	              "Beep": "false"
@@ -31861,7 +31870,7 @@
 	            var sid = reservation.task.sid;
 	            var to = reservation.task.attributes.to;
 	            var from = reservation.task.attributes.from;
-	            reservation.call(from, (undefined) + "/api/calls/outbound/dial/" + to + "/from/" + from + "/conf/" + sid, (undefined) + "/api/taskrouter/event", "true", "", "", (undefined) + "/api/taskrouter/event");
+	            reservation.call(from, ("http://thinkvoice.ngrok.io") + "/api/calls/outbound/dial/" + to + "/from/" + from + "/conf/" + sid, ("http://thinkvoice.ngrok.io") + "/api/taskrouter/event", "true", "", "", ("http://thinkvoice.ngrok.io") + "/api/taskrouter/event");
 
 	            break;
 	          default:
