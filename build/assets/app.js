@@ -34,7 +34,7 @@
 /******/ 	__webpack_require__.c = installedModules;
 
 /******/ 	// __webpack_public_path__
-/******/ 	__webpack_require__.p = "";
+/******/ 	__webpack_require__.p = "/assets/";
 
 /******/ 	// Load entry module and return exports
 /******/ 	return __webpack_require__(0);
@@ -70,8 +70,8 @@
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-	__webpack_require__(525);
-	__webpack_require__(529);
+	__webpack_require__(526);
+	__webpack_require__(530);
 
 	var store = (0, _configureStore2.default)();
 
@@ -31601,7 +31601,7 @@
 
 	var _actions = __webpack_require__(506);
 
-	var _AgentWorkSpace = __webpack_require__(509);
+	var _AgentWorkSpace = __webpack_require__(510);
 
 	var _AgentWorkSpace2 = _interopRequireDefault(_AgentWorkSpace);
 
@@ -31705,6 +31705,10 @@
 
 	var _isomorphicFetch2 = _interopRequireDefault(_isomorphicFetch);
 
+	var _configureUrls = __webpack_require__(509);
+
+	var _configureUrls2 = _interopRequireDefault(_configureUrls);
+
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	// Actions to register the worker
@@ -31787,17 +31791,14 @@
 	  return function (dispatch, getState) {
 	    console.log(workerSid);
 	    dispatch(registerWorker());
-	    return (0, _isomorphicFetch2.default)('https://axiomatic-wilderness-2842.twil.io/token-taskrouter', {
+	    return (0, _isomorphicFetch2.default)(_configureUrls2.default.taskRouterToken, {
 	      method: "POST",
-	      mode: "no-cors",
 	      headers: {
-	        "Content-Type": "application/json"
+	        "Content-Type": "application/x-www-form-urlencoded"
 	      },
-	      body: JSON.stringify({
-	        workerSid: workerSid
-	      })
+	      body: "workerSid=" + workerSid
 	    }).then(function (response) {
-	      return response.text();
+	      return response.json();
 	    }).then(function (json) {
 	      console.log(json);
 	      var worker = new Twilio.TaskRouter.Worker(json.token, true, null, "WA564faeb747a2683f929ea700579eeed5", true);
@@ -31939,10 +31940,20 @@
 	function requestPhone(clientName) {
 	  return function (dispatch, getState) {
 	    dispatch(registerPhoneDevice());
-	    return (0, _isomorphicFetch2.default)('/api/tokens/phone/' + clientName).then(function (response) {
-	      return response.text();
-	    }).then(function (text) {
-	      Twilio.Device.setup(text);
+
+	    var _getState2 = getState(),
+	        taskrouter = _getState2.taskrouter;
+
+	    return (0, _isomorphicFetch2.default)(_configureUrls2.default.clientToken, {
+	      method: "POST",
+	      headers: {
+	        "Content-Type": "application/x-www-form-urlencoded"
+	      },
+	      body: "clientName=" + clientName + "&token=" + taskrouter.worker.token
+	    }).then(function (response) {
+	      return response.json();
+	    }).then(function (json) {
+	      Twilio.Device.setup(json.token);
 	      Twilio.Device.ready(function (device) {
 	        console.log("phone is ready");
 	        dispatch(phoneDeviceUpdated(device));
@@ -32021,8 +32032,8 @@
 
 	function phoneMute() {
 	  return function (dispatch, getState) {
-	    var _getState2 = getState(),
-	        phone = _getState2.phone;
+	    var _getState3 = getState(),
+	        phone = _getState3.phone;
 
 	    console.log("mute clicked");
 	    console.log("Current call is muted? " + phone.currentCall.isMuted());
@@ -32033,8 +32044,8 @@
 
 	function phoneButtonPushed(digit) {
 	  return function (dispatch, getState) {
-	    var _getState3 = getState(),
-	        phone = _getState3.phone;
+	    var _getState4 = getState(),
+	        phone = _getState4.phone;
 
 	    console.log("dial pad clicked ", digit);
 
@@ -32046,9 +32057,9 @@
 	  return function (dispatch, getState) {
 	    // Call the number that is currently in the number box
 	    // pass the from and to number for the phone call as well as agent name
-	    var _getState4 = getState(),
-	        phone = _getState4.phone,
-	        taskrouter = _getState4.taskrouter;
+	    var _getState5 = getState(),
+	        phone = _getState5.phone,
+	        taskrouter = _getState5.taskrouter;
 
 	    console.log("call clicked to " + phone.dialPadNumber);
 
@@ -32084,8 +32095,8 @@
 
 	function phoneHangup() {
 	  return function (dispatch, getState) {
-	    var _getState5 = getState(),
-	        phone = _getState5.phone;
+	    var _getState6 = getState(),
+	        phone = _getState6.phone;
 
 	    phone.currentCall.disconnect();
 	  };
@@ -32674,6 +32685,20 @@
 
 /***/ }),
 /* 509 */
+/***/ (function(module, exports) {
+
+	'use strict';
+
+	var baseUrl = 'https://axiomatic-wilderness-2842.twil.io/';
+
+	module.exports = {
+	  taskRouterToken: baseUrl + 'token-taskrouter',
+	  clientToken: baseUrl + 'token-client'
+
+	};
+
+/***/ }),
+/* 510 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -32686,19 +32711,19 @@
 
 	var _react2 = _interopRequireDefault(_react);
 
-	var _SimpleAgentStatusControlsContainer = __webpack_require__(510);
+	var _SimpleAgentStatusControlsContainer = __webpack_require__(511);
 
 	var _SimpleAgentStatusControlsContainer2 = _interopRequireDefault(_SimpleAgentStatusControlsContainer);
 
-	var _MessengerContainer = __webpack_require__(513);
+	var _MessengerContainer = __webpack_require__(514);
 
 	var _MessengerContainer2 = _interopRequireDefault(_MessengerContainer);
 
-	var _PhoneContainer = __webpack_require__(518);
+	var _PhoneContainer = __webpack_require__(519);
 
 	var _PhoneContainer2 = _interopRequireDefault(_PhoneContainer);
 
-	var _QueueStats = __webpack_require__(523);
+	var _QueueStats = __webpack_require__(524);
 
 	var _QueueStats2 = _interopRequireDefault(_QueueStats);
 
@@ -32752,7 +32777,7 @@
 	exports.default = AgentWorkSpace;
 
 /***/ }),
-/* 510 */
+/* 511 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -32765,7 +32790,7 @@
 
 	var _actions = __webpack_require__(506);
 
-	var _SimpleAgentStatusControls = __webpack_require__(511);
+	var _SimpleAgentStatusControls = __webpack_require__(512);
 
 	var _SimpleAgentStatusControls2 = _interopRequireDefault(_SimpleAgentStatusControls);
 
@@ -32795,7 +32820,7 @@
 	exports.default = SimpleAgentStatusControlsContainer;
 
 /***/ }),
-/* 511 */
+/* 512 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -32808,7 +32833,7 @@
 
 	var _react2 = _interopRequireDefault(_react);
 
-	var _Button = __webpack_require__(512);
+	var _Button = __webpack_require__(513);
 
 	var _Button2 = _interopRequireDefault(_Button);
 
@@ -32858,7 +32883,7 @@
 	exports.default = SimpleAgentStatusControls;
 
 /***/ }),
-/* 512 */
+/* 513 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -32926,7 +32951,7 @@
 	exports.default = Button;
 
 /***/ }),
-/* 513 */
+/* 514 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -32939,7 +32964,7 @@
 
 	var _react2 = _interopRequireDefault(_react);
 
-	var _Messenger = __webpack_require__(514);
+	var _Messenger = __webpack_require__(515);
 
 	var _Messenger2 = _interopRequireDefault(_Messenger);
 
@@ -32963,7 +32988,7 @@
 	exports.default = MessageBoxContainer;
 
 /***/ }),
-/* 514 */
+/* 515 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -32972,15 +32997,15 @@
 	  value: true
 	});
 
-	var _MessageBox = __webpack_require__(515);
+	var _MessageBox = __webpack_require__(516);
 
 	var _MessageBox2 = _interopRequireDefault(_MessageBox);
 
-	var _MessageEntry = __webpack_require__(516);
+	var _MessageEntry = __webpack_require__(517);
 
 	var _MessageEntry2 = _interopRequireDefault(_MessageEntry);
 
-	var _MessageControl = __webpack_require__(517);
+	var _MessageControl = __webpack_require__(518);
 
 	var _MessageControl2 = _interopRequireDefault(_MessageControl);
 
@@ -33006,7 +33031,7 @@
 	exports.default = Messenger;
 
 /***/ }),
-/* 515 */
+/* 516 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -33049,7 +33074,7 @@
 	exports.default = MessageBox;
 
 /***/ }),
-/* 516 */
+/* 517 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -33077,7 +33102,7 @@
 	exports.default = MessageEntry;
 
 /***/ }),
-/* 517 */
+/* 518 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -33086,7 +33111,7 @@
 	  value: true
 	});
 
-	var _Button = __webpack_require__(512);
+	var _Button = __webpack_require__(513);
 
 	var _Button2 = _interopRequireDefault(_Button);
 
@@ -33113,7 +33138,7 @@
 	exports.default = MessageControl;
 
 /***/ }),
-/* 518 */
+/* 519 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -33126,7 +33151,7 @@
 
 	var _react2 = _interopRequireDefault(_react);
 
-	var _phone = __webpack_require__(519);
+	var _phone = __webpack_require__(520);
 
 	var _phone2 = _interopRequireDefault(_phone);
 
@@ -33195,7 +33220,7 @@
 	exports.default = PhoneContainer;
 
 /***/ }),
-/* 519 */
+/* 520 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -33204,15 +33229,15 @@
 	  value: true
 	});
 
-	var _NumberEntry = __webpack_require__(520);
+	var _NumberEntry = __webpack_require__(521);
 
 	var _NumberEntry2 = _interopRequireDefault(_NumberEntry);
 
-	var _KeyPad = __webpack_require__(521);
+	var _KeyPad = __webpack_require__(522);
 
 	var _KeyPad2 = _interopRequireDefault(_KeyPad);
 
-	var _CallControl = __webpack_require__(522);
+	var _CallControl = __webpack_require__(523);
 
 	var _CallControl2 = _interopRequireDefault(_CallControl);
 
@@ -33251,7 +33276,7 @@
 	exports.default = Phone;
 
 /***/ }),
-/* 520 */
+/* 521 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -33284,7 +33309,7 @@
 	exports.default = NumberEntry;
 
 /***/ }),
-/* 521 */
+/* 522 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -33332,7 +33357,7 @@
 	exports.default = KeyPad;
 
 /***/ }),
-/* 522 */
+/* 523 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -33341,7 +33366,7 @@
 	  value: true
 	});
 
-	var _Button = __webpack_require__(512);
+	var _Button = __webpack_require__(513);
 
 	var _Button2 = _interopRequireDefault(_Button);
 
@@ -33412,7 +33437,7 @@
 	exports.default = CallControl;
 
 /***/ }),
-/* 523 */
+/* 524 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -33425,7 +33450,7 @@
 
 	var _react2 = _interopRequireDefault(_react);
 
-	var _StatBox = __webpack_require__(524);
+	var _StatBox = __webpack_require__(525);
 
 	var _StatBox2 = _interopRequireDefault(_StatBox);
 
@@ -33449,7 +33474,7 @@
 	exports.default = QueueStats;
 
 /***/ }),
-/* 524 */
+/* 525 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -33497,16 +33522,16 @@
 	exports.default = StatBox;
 
 /***/ }),
-/* 525 */
+/* 526 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	// style-loader: Adds some css to the DOM by adding a <style> tag
 
 	// load the styles
-	var content = __webpack_require__(526);
+	var content = __webpack_require__(527);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	// add the styles to the DOM
-	var update = __webpack_require__(528)(content, {});
+	var update = __webpack_require__(529)(content, {});
 	if(content.locals) module.exports = content.locals;
 	// Hot Module Replacement
 	if(false) {
@@ -33523,10 +33548,10 @@
 	}
 
 /***/ }),
-/* 526 */
+/* 527 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(527)();
+	exports = module.exports = __webpack_require__(528)();
 	// imports
 
 
@@ -33537,7 +33562,7 @@
 
 
 /***/ }),
-/* 527 */
+/* 528 */
 /***/ (function(module, exports) {
 
 	/*
@@ -33593,7 +33618,7 @@
 
 
 /***/ }),
-/* 528 */
+/* 529 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	/*
@@ -33845,16 +33870,16 @@
 
 
 /***/ }),
-/* 529 */
+/* 530 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	// style-loader: Adds some css to the DOM by adding a <style> tag
 
 	// load the styles
-	var content = __webpack_require__(530);
+	var content = __webpack_require__(531);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	// add the styles to the DOM
-	var update = __webpack_require__(528)(content, {});
+	var update = __webpack_require__(529)(content, {});
 	if(content.locals) module.exports = content.locals;
 	// Hot Module Replacement
 	if(false) {
@@ -33871,10 +33896,10 @@
 	}
 
 /***/ }),
-/* 530 */
+/* 531 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(527)();
+	exports = module.exports = __webpack_require__(528)();
 	// imports
 
 

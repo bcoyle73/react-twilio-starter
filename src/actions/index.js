@@ -1,4 +1,5 @@
 import fetch from 'isomorphic-fetch'
+import urls from '../configureUrls'
 
 // Actions to register the worker
 function registerWorker() {
@@ -80,7 +81,7 @@ export function requestWorker(workerSid) {
   return (dispatch, getState) => {
     console.log(workerSid)
     dispatch(registerWorker())
-    return fetch('https://axiomatic-wilderness-2842.twil.io/token-taskrouter', {
+    return fetch(urls.taskRouterToken, {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded"
@@ -106,7 +107,7 @@ export function requestWorker(workerSid) {
         worker.on("ready", (worker) => {
           dispatch(workerUpdated(worker))
           dispatch(requestPhone(worker.friendlyName))
-          dispatch(requestChat(worker.friendlyName))
+          //dispatch(requestChat(worker.friendlyName))
           console.log("worker obj", worker)
         })
         worker.on('activity.update', (worker) => {
@@ -142,7 +143,7 @@ export function requestWorker(workerSid) {
               console.log(customerLeg, "customer call sid")
               console.log("Create a conference for agent and customer")
               var options = {
-                  "ConferenceStatusCallback": BASE_URL + "/api/calls/conference/events/" + customerLeg,
+                  "ConferenceStatusCallback": urls.baseUrl + "/api/calls/conference/events/" + customerLeg,
                   "ConferenceStatusCallbackEvent": "start,leave,join,end",
                   "EndConferenceOnExit": "false",
                   "Beep": "false"
@@ -161,15 +162,20 @@ export function requestWorker(workerSid) {
               const sid = reservation.task.sid
               const to = reservation.task.attributes.to
               const from = reservation.task.attributes.from
+              console.log(reservation, "OUTBOUTND")
+              try {
               reservation.call(
                 from,
-                BASE_URL + "/api/calls/outbound/dial/" + to + "/from/" + from + "/conf/" + sid,
-                BASE_URL + "/api/taskrouter/event",
+                urls.baseUrl + "/api/calls/outbound/dial/" + to + "/from/" + from + "/conf/" + sid,
+                urls.baseUrl + "/api/taskrouter/event/",
                 "true",
                 "",
                 "",
-                BASE_URL + "/api/taskrouter/event"
+                urls.baseUrl + "/api/taskrouter/event"
               )
+            } catch(error) {
+              console.log("ERROR CALL", error)
+            }
 
               break
             default:
@@ -240,10 +246,17 @@ export function phoneConnectionUpdated(conn) {
 export function requestPhone(clientName) {
   return (dispatch, getState) => {
     dispatch(registerPhoneDevice())
-    return fetch(`/api/tokens/phone/${clientName}`)
-      .then(response => response.text())
-      .then(text => {
-        Twilio.Device.setup(text)
+    const { taskrouter } = getState()
+    return fetch(urls.clientToken, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: "clientName="+clientName+"&token="+taskrouter.worker.token,
+      })
+      .then(response => response.json())
+      .then(json => {
+        Twilio.Device.setup(json.token)
         Twilio.Device.ready((device) => {
           console.log("phone is ready");
           dispatch(phoneDeviceUpdated(device))
@@ -312,7 +325,14 @@ export function phoneRecordOff() {
 
 export function requestConfTerminate(confSid) {
   return(dispatch, getState) => {
-    return fetch(`/api/calls/conference/${confSid}/terminate`,{method: "POST"})
+    const { taskrouter } = getState()
+    return fetch(urls.conferenceTerminate, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: "conferenceSid="+confSid+"&token="+taskrouter.worker.token,
+      })
       .then(response => response.json())
       .then( json => {
         console.log(json)

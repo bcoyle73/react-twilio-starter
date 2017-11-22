@@ -35,6 +35,8 @@ router.post('/conference/events/:call_sid', function(req, res) {
   const client = require('twilio')(config.accountSid, config.authToken);
   const callerSid = req.params.call_sid
 
+  // This method of putting call sid in the URI does not allow you to reconnect a calls
+  //  to customer if customer drops
   if (callerSid === req.body.CallSid && req.body.StatusCallbackEvent == 'participant-leave') {
     console.log("CALLER HUNG UP.  KILL CONFERENCE")
     client.api.accounts(config.accountSid)
