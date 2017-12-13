@@ -53,6 +53,7 @@ export function requestTaskComplete(reservation) {
       if (error) {
         console.log(error);
       }
+      console.log(task)
     })
   }
 }
@@ -71,6 +72,7 @@ export function requestStateChange(newStateName) {
       if (error) {
         console.log(error);
       } else {
+        console.log("STATE CHANGE", worker)
         dispatch(workerUpdated(worker))
       }
     })
@@ -133,6 +135,10 @@ export function requestWorker(workerSid) {
           console.log(reservation, "RESERVATION ACCEPTED RESV")
           dispatch(reservationCreated(reservation))
           //dispatch(phoneRecord(reservation.task.attributes.conference.sid))
+        })
+        worker.on("capacity.update", function(channel) {
+
+          console.log("Capacity updated", channel);
         })
         worker.on('reservation.created', (reservation) => {
           console.log("Incoming reservation")
@@ -336,6 +342,7 @@ export function requestConfTerminate(confSid) {
       .then(response => response.json())
       .then( json => {
         console.log(json)
+        dispatch(requestTaskComplete(taskrouter.reservations[0]))
       })
   }
 }
