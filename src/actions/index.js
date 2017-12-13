@@ -98,6 +98,10 @@ export function requestWorker(workerSid) {
         worker.activities.fetch((error, activityList) => {
            dispatch(activitiesUpdated(activityList.data))
         })
+        worker.fetchChannels((error, channels) => {
+           dispatch(channelsUpdated(channels.data))
+
+        })
         worker.fetchReservations((error, reservations) => {
            console.log(reservations.data, "RESERVATIONS")
            if (reservations.data.length > 0) {
@@ -130,16 +134,36 @@ export function requestWorker(workerSid) {
         worker.on('reservation.timeout', (reservation) => {
           console.log("Reservation Timed Out")
         })
+        // Another worker has accepted the task
+        worker.on('reservation.rescinded', (reservation) => {
+          console.log("Reservation Rescinded")
+        })
+        worker.on('reservation.rejected', (reservation) => {
+          console.log("Reservation Rejected")
+        })
+        worker.on('reservation.cancelled', (reservation) => {
+          console.log("Reservation Cancelled")
+        })
         worker.on('reservation.accepted', (reservation) => {
           console.log("Reservation Accepted")
           console.log(reservation, "RESERVATION ACCEPTED RESV")
           dispatch(reservationCreated(reservation))
           //dispatch(phoneRecord(reservation.task.attributes.conference.sid))
         })
-        worker.on("capacity.update", function(channel) {
+        worker.on("attributes.update", function(channel) {
 
-          console.log("Capacity updated", channel);
+          console.log("Worker attributes updated", channel);
         })
+        worker.on("channel.availability.update", function(channel) {
+
+          console.log("Channel availability updated", channel);
+        })
+
+        worker.on("channel.capacity.update", function(channel) {
+
+          console.log("Channel capacity updated", channel);
+        })
+        
         worker.on('reservation.created', (reservation) => {
           console.log("Incoming reservation")
           console.log(reservation)
