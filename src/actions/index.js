@@ -93,7 +93,10 @@ export function requestWorker(workerSid) {
       .then(response => response.json())
       .then(json => {
         console.log(json)
-        let worker = new Twilio.TaskRouter.Worker(json.token, true, null, "WA564faeb747a2683f929ea700579eeed5", true )
+        // Register your TaskRouter Worker
+        // --params token, debug, connectActivitySid, disconnectActivitySid, closeExistingSession
+        // --see https://www.twilio.com/docs/api/taskrouter/worker-js#parameters
+        let worker = new Twilio.TaskRouter.Worker(json.token, true, null, null, true )
 
         worker.activities.fetch((error, activityList) => {
            dispatch(activitiesUpdated(activityList.data))
