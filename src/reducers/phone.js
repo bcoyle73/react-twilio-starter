@@ -3,6 +3,7 @@ const phone = (state = {
   device: {},
   isMuted: false,
   isRecording: false,
+  isHeld: false,
   recordingLegSid: "",
   warning: "",
   isRegistered: false,
@@ -30,6 +31,10 @@ const phone = (state = {
     case 'PHONE_MUTED':
       return Object.assign({}, state, {
         isMuted: action.boolean
+      });
+    case 'PHONE_HELD':
+      return Object.assign({}, state, {
+        isHeld: action.boolean
       });
     case 'PHONE_RECORD_ON':
       return Object.assign({}, state, {

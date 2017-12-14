@@ -9,6 +9,7 @@ const CallControl = ({
   hold,
   record,
   isMuted,
+  isHeld,
   isRecording,
   recordingCallSid,
   callSid,
@@ -22,7 +23,7 @@ const CallControl = ({
       <div>
         <Button onClick={e => hangup(reservation, confSid)} classes={["hangup"]} buttonText="Hangup" />
         <Button onClick={mute} classes={["mute"]} buttonText={isMuted ? 'Unmute' : 'Mute' } />
-        <Button onClick={e => hold(confSid, callSid)} classes={["hold"]} buttonText="Hold" />
+        <Button onClick={e => hold(confSid, callSid)} classes={["hold"]} buttonText={isHeld ? 'UnHold' : 'Hold' } />
         <Button onClick={e => record(confSid, recordingCallSid)} classes={["hold"]} buttonText={isRecording ? "Pause" : "Record"} />
         <Button onClick={e => hold(confSid, callSid)} classes={["hold"]} buttonText="Transfer" />
       </div>

@@ -255,6 +255,13 @@ function phoneMuted(boolean) {
   }
 }
 
+function phoneHeld(boolean) {
+  return {
+    type: 'PHONE_HELD',
+    boolean: boolean
+  }
+}
+
 function phoneWarning(warning) {
   return {
     type: 'PHONE_WARNING',
@@ -324,19 +331,21 @@ export function requestPhone(clientName) {
 
 export function phoneHold(confSid, callSid) {
   return(dispatch, getState) => {
-    const { taskrouter } = getState()
+    const { taskrouter, phone } = getState()
+    const newHoldState = !phone.isHeld
     return fetch(urls.callHold, {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded"
         },
-        body: "conference_sid="+confSid+"&call_sid="+callSid+"&toggle=true"+"&token="+taskrouter.worker.token,
+        body: "conference_sid="+confSid+"&call_sid="+callSid+"&toggle="+newHoldState+"&token="+taskrouter.worker.token,
       })
       .then(response => response.json())
       .then(json => {
         console.log(json)
+        dispatch(phoneHeld(json.result))
       })
-      
+
   }
 }
 
@@ -386,12 +395,14 @@ export function requestConfTerminate(confSid) {
   }
 }
 
+// Phone Mute will use the Twilio Device to Mute the call
+// -- After the phone is muted a callback will fired to update
+// -- the redux store.
 export function phoneMute() {
   return (dispatch, getState) => {
     const { phone } = getState()
     console.log("mute clicked")
     console.log("Current call is muted? " + phone.currentCall.isMuted())
-
     phone.currentCall.mute(!phone.currentCall.isMuted())
   }
 }

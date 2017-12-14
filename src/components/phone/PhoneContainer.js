@@ -20,6 +20,7 @@ const mapStateToProps = (state) => {
   return {
     status: phone.currentCall._status,
     isMuted: phone.isMuted,
+    isHeld: phone.isHeld,
     isRecording: phone.isRecording,
     recordingCallSid: phone.recordingLegSid,
     callSid: caller,
