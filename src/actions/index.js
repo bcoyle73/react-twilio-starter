@@ -151,6 +151,7 @@ export function requestWorker(workerSid) {
           console.log("Reservation Accepted")
           console.log(reservation, "RESERVATION ACCEPTED RESV")
           dispatch(reservationCreated(reservation))
+          // Phone record is a demo of stop/start recording with ghost legs  
           //dispatch(phoneRecord(reservation.task.attributes.conference.sid))
         })
         worker.on("attributes.update", function(channel) {

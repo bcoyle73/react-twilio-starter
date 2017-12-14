@@ -1,10 +1,14 @@
 # react-twilio-starter
 This application will serve as a getting started application for building a Twilio powered multi channel contact center using React and Redux on the front end and Twilio Functions for the backend.  The backend can be swapped out to use whichever server side technology or framework you choose.
 
+NOTE: This includes a node server backend which includes the functionality currently being migrated to Twilio functions.  This server side node code has been left in as an example for an option not using Twilio functions.
+
 ## Setup
 
 ### Twilio Product Setup
 * Create a TaskRouter Workspace - https://www.twilio.com/console/taskrouter/workspaces
+* On the workspace setting page enable **Multitasking**
+
 
 
 ### Twilio Functions Backend
