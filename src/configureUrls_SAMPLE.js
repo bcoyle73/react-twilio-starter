@@ -1,4 +1,4 @@
-let baseUrl = 'https://axiomatic-wilderness-2842.twil.io/'
+let baseUrl = 'https://YOUR DOMAIN/'
 
 module.exports = {
   baseUrl: baseUrl,

@@ -24,7 +24,8 @@ TWILIO_WORKFLOW_SID=[your default workflow sid]
 ### React Frontend
 * Clone this front end repo
 * run **npm install**
-* All server side URLs are defined in single file to make it easy to configure custom urls for any Twilio functions you have copied or created yourself.  Configure your Function URLs in the /src/configureURLs.js file
+* All server side URLs are defined in single file to make it easy to configure custom urls for any Twilio functions you have copied or created yourself.  Configure your Function URLs in the /src/configureUrls.js file
+  * Copy src/configureUrls_SAMPLE.js to configureUrls.js
   * Set base_url to your Twilio Runtime URL: https://www.twilio.com/console/runtime/overview
   * Set taskRouterToken to path you defined
   * Set clientToken to path you defined

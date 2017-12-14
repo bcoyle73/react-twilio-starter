@@ -1,6 +1,6 @@
 .env
 .env_bcoyle
-.env_kpn
 node_modules
 npm-debug.log
 .DS_Store
+src/configureUrls.js
