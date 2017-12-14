@@ -1,9 +1,9 @@
-let baseUrl = 'https://axiomatic-wilderness-2842.twil.io/'
+let baseUrl = 'YOUR URL'
 
 module.exports = {
   baseUrl: baseUrl,
-  taskRouterToken: baseUrl + 'token-taskrouter',
-  clientToken: baseUrl + 'token-client',
-  conferenceTerminate: baseUrl + 'conference-terminate',
+  taskRouterToken: baseUrl + 'taskrouter-client-token',
+  clientToken: baseUrl + 'twilio-client-token',
+  conferenceTerminate: baseUrl + 'terminate-conference',
 
 }
