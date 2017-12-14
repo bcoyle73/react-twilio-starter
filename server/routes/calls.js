@@ -96,16 +96,16 @@ router.post('/conference/:conference_sid/terminate', function(req, res) {
 // This endpoint dials out to a number and places that call into a conference
 //  it also responds with Twiml to place the call accessing this endpoint into the same conference
 //  This is called primarly when workers accept a reservation with call method
-router.post('/outbound/dial/:to/from/:from/conf/:conference_id', function(req, res) {
+router.post('/outbound/dial/:to/from/:from/conf/:conference_name', function(req, res) {
   console.log(req.body)
   const to = req.params.to
   const from = req.params.from
-  const conferenceSid = req.params.conference_id
+  const conferenceName = req.params.conference_name
   const client = require('twilio')(config.accountSid, config.authToken);
 
   client
-    .conferences(conferenceSid)
-    .participants.create({to: to, from: from, earlyMedia: "true", statusCallback: config.baseUrl + "/api/taskrouter/event"})
+    .conferences(conferenceName)
+    .participants.create({to: to, from: from, earlyMedia: "true", statusCallback: "http://bcoyle.ngrok.io" + "/api/taskrouter/event"})
     .then((participant) => {
       const resp = new VoiceResponse();
       const dial = resp.dial();
@@ -114,16 +114,16 @@ router.post('/outbound/dial/:to/from/:from/conf/:conference_id', function(req, r
         waitUrl: '',
         startConferenceOnEnter: true,
         endConferenceOnExit: false
-      }, conferenceSid);
+      }, conferenceName);
       console.log(resp.toString())
       res.send(resp.toString());
 
       // Now update the task with a conference attribute with Agent Call Sid
       client.taskrouter.v1
         .workspaces(config.workspaceSid)
-        .tasks(conferenceSid)
+        .tasks(conferenceName)
         .update({
-          attributes: JSON.stringify({conference: {sid: participant.conferenceSid, participants: {worker: participant.callSid, customer: ""}}}),
+          attributes: JSON.stringify({conference: {sid: participant.conferenceSid, participants: {worker: req.body.CallSid, customer: participant.callSid}}}),
         }).then((task) => {
           console.log(task)
         })

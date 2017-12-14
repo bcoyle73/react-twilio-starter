@@ -163,7 +163,7 @@ export function requestWorker(workerSid) {
 
           console.log("Channel capacity updated", channel);
         })
-        
+
         worker.on('reservation.created', (reservation) => {
           console.log("Incoming reservation")
           console.log(reservation)
@@ -189,14 +189,14 @@ export function requestWorker(workerSid) {
               dispatch(videoRequest(reservation.task))
               break
             case 'custom1':
-              const sid = reservation.task.sid
+              const taskSid = reservation.task.sid
               const to = reservation.task.attributes.to
               const from = reservation.task.attributes.from
               console.log(reservation, "OUTBOUTND")
               try {
               reservation.call(
                 from,
-                urls.baseUrl + "/api/calls/outbound/dial/" + to + "/from/" + from + "/conf/" + sid,
+                urls.baseUrl + "/api/calls/outbound/dial/" + to + "/from/" + from + "/conf/" + taskSid,
                 urls.baseUrl + "/api/taskrouter/event/",
                 "true",
                 "",
