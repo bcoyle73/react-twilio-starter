@@ -108,7 +108,7 @@ export function requestWorker(workerSid) {
         worker.fetchReservations((error, reservations) => {
            console.log(reservations.data, "RESERVATIONS")
            if (reservations.data.length > 0) {
-             console.log("call into conf")
+             console.log("Your worker has reservations currently assigned to them")
            }
 
         })
@@ -324,11 +324,19 @@ export function requestPhone(clientName) {
 
 export function phoneHold(confSid, callSid) {
   return(dispatch, getState) => {
-    return fetch(`/api/calls/conference/${confSid}/hold/${callSid}/true`,{method: "POST"})
+    const { taskrouter } = getState()
+    return fetch(urls.callHold, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: "conference_sid="+confSid+"&call_sid="+callSid+"&toggle=true"+"&token="+taskrouter.worker.token,
+      })
       .then(response => response.json())
-      .then( json => {
+      .then(json => {
         console.log(json)
       })
+      
   }
 }
 
@@ -356,6 +364,10 @@ export function phoneRecordOff() {
   }
 }
 
+// This action is tied to the hangup phone phone button
+// - this action will call down to server which complete's the conference
+// - which then terminates all participant's calls
+// - after getting a response from the server this will update the task as complete
 export function requestConfTerminate(confSid) {
   return(dispatch, getState) => {
     const { taskrouter } = getState()

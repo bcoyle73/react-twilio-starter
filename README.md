@@ -9,12 +9,13 @@ This application will serve as a getting started application for building a Twil
 
 ### Twilio Functions Backend
 * In your Twilio console go to Runtime->Functions->Config - https://www.twilio.com/console/runtime/functions/configure
-* Under Creditils Enable  ACCOUNT_SID and AUTH_TOKEN
+* Under Credentials Enable  ACCOUNT_SID and AUTH_TOKEN
 * Add the following environment variables
 ```sh
 TWILIO_WORKSPACE_SID=[your workspace sid]
 TWILIO_WORKFLOW_SID=[your default workflow sid]
 ```
+* Under Dependencies add jsonwebtoken v8.1.0
 * For each function in this repo: https://github.com/tonyv/twilio-functions create a new Twilio function on the manage page of functions: https://www.twilio.com/console/runtime/functions/manage.
 * You can name the Twilio function whatever name you choose and the URL to whatever you choose.  The front end app will default to the file name of each of the functions in the repo but this is configurable
 * Unless noted in the comments of the function you will not check the **Check for valid Twilio signature**
