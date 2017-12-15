@@ -8,18 +8,17 @@ function registerWorker() {
   }
 }
 
+function workerConnectionUpdate(status) {
+  return {
+    type: 'CONNECTION_UPDATED',
+    status: status
+  }
+}
+
 export function workerUpdated(worker) {
   return {
     type: 'WORKER_UPDATED',
     worker: worker
-  }
-}
-
-export function currentActivityFetch(worker) {
-  return ( dispatch, getState ) => {
-    worker.fetchReservations((error, reservations) => {
-      dispatch(reservationsUpdated(reservations.data))
-    })
   }
 }
 
@@ -47,8 +46,8 @@ function reservationsUpdated(data) {
 
 export function requestTaskComplete(reservation) {
   return (dispatch) => {
-    console.log("I AM GOING TO COMPLETE " + reservation.taskSid)
-    console.log("ITS CURRENT ASSIGNMENT STATIS is " + reservation.reservationStatus)
+    console.log("COMPLETE TASK")
+    console.log(reservation)
     reservation.task.complete((error, task) => {
       if (error) {
         console.log(error);
@@ -99,6 +98,8 @@ export function requestWorker(workerSid) {
         let worker = new Twilio.TaskRouter.Worker(json.token, true, null, null, true )
 
         worker.activities.fetch((error, activityList) => {
+          console.log(error, "ERROR")
+          console.log(activityList)
            dispatch(activitiesUpdated(activityList.data))
         })
         worker.fetchChannels((error, channels) => {
@@ -114,6 +115,7 @@ export function requestWorker(workerSid) {
         })
         dispatch(workerUpdated(worker))
         worker.on("ready", (worker) => {
+          dispatch(workerConnectionUpdate("ready"))
           dispatch(workerUpdated(worker))
           dispatch(requestPhone(worker.friendlyName))
           //dispatch(requestChat(worker.friendlyName))
@@ -129,9 +131,11 @@ export function requestWorker(workerSid) {
         worker.on('error', (error) => {
           // You would want to provide the agent a notication of the error
           console.log("Websocket had an error: "+ error.response + " with message: "+error.message)
+          console.log(error)
         })
         worker.on("disconnected", function() {
           // You would want to provide the agent a notication of the error
+          dispatch(workerConnectionUpdate("disconnected"))
           console.log("Websocket has disconnected");
         })
         worker.on('reservation.timeout', (reservation) => {
@@ -151,7 +155,7 @@ export function requestWorker(workerSid) {
           console.log("Reservation Accepted")
           console.log(reservation, "RESERVATION ACCEPTED RESV")
           dispatch(reservationCreated(reservation))
-          // Phone record is a demo of stop/start recording with ghost legs  
+          // Phone record is a demo of stop/start recording with ghost legs
           //dispatch(phoneRecord(reservation.task.attributes.conference.sid))
         })
         worker.on("attributes.update", function(channel) {
@@ -197,19 +201,21 @@ export function requestWorker(workerSid) {
               const to = reservation.task.attributes.to
               const from = reservation.task.attributes.from
               console.log(reservation, "OUTBOUTND")
-              try {
               reservation.call(
                 from,
-                urls.baseUrl + "/api/calls/outbound/dial/" + to + "/from/" + from + "/conf/" + taskSid,
-                urls.baseUrl + "/api/taskrouter/event/",
+                urls.callOutboundCallback + "?ToPhone="+to+"&FromPhone="+from+"&Sid="+taskSid,
+                null,
                 "true",
                 "",
                 "",
-                urls.baseUrl + "/api/taskrouter/event"
+                function(error, reservation) {
+                  if (error) {
+                    console.log(error)
+                    console.log(error.message)
+                  }
+                  console.log(reservation)
+                }
               )
-            } catch(error) {
-              console.log("ERROR CALL", error)
-            }
 
               break
             default:
@@ -424,20 +430,18 @@ export function phoneCall() {
     const { phone, taskrouter } = getState()
     console.log("call clicked to " + phone.dialPadNumber)
 
-    return fetch(`/api/taskrouter/outbound`,
+    return fetch(urls.callOutbound,
       {
         method: "POST",
         headers: {
         'Accept': 'application/json',
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/x-www-form-urlencoded'
       },
         body:
-          JSON.stringify({
-          To: phone.dialPadNumber,
-          From: taskrouter.worker.attributes.phone_number,
-          Agent: taskrouter.worker.friendlyName
-        })
-
+          "To=" + phone.dialPadNumber + "&" +
+          "From=" + taskrouter.worker.attributes.phone_number + "&" +
+          "Agent=" + taskrouter.worker.friendlyName + "&" +
+          "Token=" + taskrouter.worker.token
       })
       .then(response => response.json())
       .then( json => {
@@ -572,6 +576,7 @@ function videoParticipantConnected(participant) {
 }
 
 const getActivitySid = (activities, activityName) => {
+  console.log(activities)
   return activities.find((activity) =>
     activity.friendlyName == activityName).sid;
 }

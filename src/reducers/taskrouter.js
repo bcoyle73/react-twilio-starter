@@ -1,6 +1,7 @@
 
 const taskrouter = (state = {
   isRegistering: false,
+  connectionStatus: "disconnected",
   worker: {},
   activities: [],
   channels: [],
@@ -9,6 +10,10 @@ const taskrouter = (state = {
 }, action) => {
   console.log(action.type)
   switch (action.type) {
+    case 'CONNECTION_UPDATED':
+      return Object.assign({}, state, {
+        connectionStatus: action.status
+      });
     case 'REGISTER_WORKER':
       return Object.assign({}, state, {
         isRegistering: true
