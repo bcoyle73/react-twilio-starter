@@ -11,7 +11,7 @@ NOTE: This includes a node server backend which includes the functionality curre
 * On the workspace setting page enable **Multitasking**
 * Create a new worker and add the following attributes
 ```sh
-{"contact_uri":"client:bcoyle", "agent_name":"bcoyle", "phone_number":"2025551212"}
+{"contact_uri":"client:YOUR WORKER FRIENDLY NAME", "agent_name":"YOUR WORKER FRIENDLY NAME", "phone_number":"2025551212"}
 ```
 *note: these attributes are used by the code and workflow in this example. Your production attributes will depend on your own routing rules*
 * Create a new TaskQueue 
