@@ -103,10 +103,15 @@ export function requestWorker(workerSid) {
           } else {
             console.log(activityList)
              dispatch(activitiesUpdated(activityList.data))
-          }  
+          }
         })
         worker.fetchChannels((error, channels) => {
-           dispatch(channelsUpdated(channels.data))
+          if (error) {
+            console.log(error, "Channels Fetch Error")
+          } else {
+            console.log(channels)
+            dispatch(channelsUpdated(channels.data))
+         }
 
         })
         worker.fetchReservations((error, reservations) => {

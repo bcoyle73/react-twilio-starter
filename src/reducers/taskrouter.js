@@ -9,7 +9,6 @@ const taskrouter = (state = {
   tasks: [],
   conference: {sid: "", participants: {customer: ""}},
 }, action) => {
-  console.log(action.type)
   switch (action.type) {
     case 'CONNECTION_UPDATED':
       return Object.assign({}, state, {
