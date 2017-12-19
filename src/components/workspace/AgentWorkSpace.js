@@ -35,7 +35,7 @@ const AgentWorkSpace = ({channels = [], currInteraction, participant = {} }) => 
 }
 
 AgentWorkSpace.propTypes = {
-  channel: PropTypes.array.isRequired
+  
 }
 
 export default AgentWorkSpace

@@ -40,11 +40,7 @@ const CallControl = ({
 }
 
 CallControl.propTypes = {
-  status: React.PropTypes.string.isRequired,
-  hangup: React.PropTypes.func.isRequired,
-  mute: React.PropTypes.func.isRequired,
-  muted: React.PropTypes.bool.isRequired
-
+  
 }
 
 export default CallControl;

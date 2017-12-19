@@ -6,6 +6,7 @@ const taskrouter = (state = {
   activities: [],
   channels: [],
   reservations: [],
+  tasks: [],
   conference: {sid: "", participants: {customer: ""}},
 }, action) => {
   console.log(action.type)
@@ -37,9 +38,9 @@ const taskrouter = (state = {
       });
     case 'RESERVATION_CREATED':
       return Object.assign({}, state, {
-        reservations: [
-          ...state.reservations,
-          action.reservation
+        tasks: [
+          ...state.tasks,
+          action.reservation.task
         ],
         conference: action.reservation.task.attributes.conference
       })

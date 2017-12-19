@@ -44,11 +44,11 @@ function reservationsUpdated(data) {
   }
 }
 
-export function requestTaskComplete(reservation) {
+export function requestTaskComplete(task) {
   return (dispatch) => {
     console.log("COMPLETE TASK")
-    console.log(reservation)
-    reservation.task.complete((error, task) => {
+    console.log(task)
+    task.complete((error, task) => {
       if (error) {
         console.log(error);
       }
@@ -98,9 +98,12 @@ export function requestWorker(workerSid) {
         let worker = new Twilio.TaskRouter.Worker(json.token, true, null, null, true )
 
         worker.activities.fetch((error, activityList) => {
-          console.log(error, "ERROR")
-          console.log(activityList)
-           dispatch(activitiesUpdated(activityList.data))
+          if (error) {
+            console.log(error, "Activity Fetch Error")
+          } else {
+            console.log(activityList)
+             dispatch(activitiesUpdated(activityList.data))
+          }  
         })
         worker.fetchChannels((error, channels) => {
            dispatch(channelsUpdated(channels.data))
@@ -396,8 +399,8 @@ export function requestConfTerminate(confSid) {
       })
       .then(response => response.json())
       .then( json => {
-        console.log(json)
-        dispatch(requestTaskComplete(taskrouter.reservations[0]))
+        console.log(json, "Terminate conf response")
+        dispatch(requestTaskComplete(taskrouter.tasks[0]))
       })
   }
 }
