@@ -125,7 +125,7 @@ export function requestWorker(workerSid) {
         headers: {
           "Content-Type": "application/x-www-form-urlencoded"
         },
-        body: "workerSid="+workerSid
+        body: "workerSid="+"WK93520723dd84ec131798ee97c293f4b4"
       })
       .then(response => response.json())
       .then(json => {
@@ -159,7 +159,7 @@ export function requestWorker(workerSid) {
         worker.on("ready", (worker) => {
           dispatch(workerConnectionUpdate("ready"))
           dispatch(workerUpdated(worker))
-          dispatch(requestPhone(worker.friendlyName))
+          dispatch(requestPhone(worker.attributes.contact_uri.split(":").pop()))
           //dispatch(requestChat(worker.friendlyName))
           console.log("worker obj", worker)
         })
@@ -217,6 +217,7 @@ export function requestWorker(workerSid) {
         worker.on('reservation.created', (reservation) => {
           console.log("Incoming reservation")
           console.log(reservation)
+
           switch (reservation.task.taskChannelUniqueName) {
             case 'voice':
               const customerLeg = reservation.task.attributes.call_sid

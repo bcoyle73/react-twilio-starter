@@ -32800,7 +32800,7 @@
 	      headers: {
 	        "Content-Type": "application/x-www-form-urlencoded"
 	      },
-	      body: "workerSid=" + workerSid
+	      body: "workerSid=" + "WK93520723dd84ec131798ee97c293f4b4"
 	    }).then(function (response) {
 	      return response.json();
 	    }).then(function (json) {
@@ -32831,6 +32831,7 @@
 	      dispatch(requestRefreshReservations());
 
 	      worker.on("ready", function (worker) {
+	        //sforce.opencti.enableClickToDial();
 	        dispatch(workerConnectionUpdate("ready"));
 	        dispatch(workerUpdated(worker));
 	        dispatch(requestPhone(worker.friendlyName));
@@ -32891,6 +32892,10 @@
 	      worker.on('reservation.created', function (reservation) {
 	        console.log("Incoming reservation");
 	        console.log(reservation);
+
+	        //sfdc screenpop fields are specific to new contact screenpop
+	        console.log("Popping " + name);
+	        sforce.opencti.searchAndScreenPop("7034749718");
 	        switch (reservation.task.taskChannelUniqueName) {
 	          case 'voice':
 	            var customerLeg = reservation.task.attributes.call_sid;
