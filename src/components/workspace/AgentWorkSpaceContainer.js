@@ -24,11 +24,11 @@ class AgentWorkSpaceContainer extends Component {
 
 
   render() {
-    const { channels, participant } = this.props
+    const { channels, participant, error, errorMessage } = this.props
     let current = "default"
 
     return (
-    	<AgentWorkSpace channels={channels} currInteraction={current} participant={participant}/>
+    	<AgentWorkSpace channels={channels} currInteraction={current} participant={participant} error={error} errorMessage={errorMessage}/>
     );
   }
 }
@@ -36,7 +36,9 @@ class AgentWorkSpaceContainer extends Component {
 const mapStateToProps = (state) => {
   return {
     channels: state.taskrouter.channels,
-    participant: state.chat.videoParticipant
+    participant: state.chat.videoParticipant,
+    error: state.taskrouter.error,
+    errorMessage: state.taskrouter.errorMessage
   }
 }
 

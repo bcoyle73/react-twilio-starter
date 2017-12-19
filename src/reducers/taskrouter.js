@@ -7,6 +7,8 @@ const taskrouter = (state = {
   activities: [],
   channels: [],
   tasks: [],
+  error: false,
+  errorMessage: ""
 }, action) => {
   switch (action.type) {
     case 'CONNECTION_UPDATED':
