@@ -223,7 +223,7 @@ export function requestWorker(workerSid) {
               console.log(customerLeg, "customer call sid")
               console.log("Create a conference for agent and customer")
               var options = {
-                  "ConferenceStatusCallback": urls.baseUrl + "/api/calls/conference/events/" + customerLeg,
+                  "ConferenceStatusCallback": urls.conferenceEvents + "?customer_sid=" + customerLeg,
                   "ConferenceStatusCallbackEvent": "start,leave,join,end",
                   "EndConferenceOnExit": "false",
                   "Beep": "false"
@@ -363,7 +363,7 @@ export function requestPhone(clientName) {
           })
           conn.disconnect((conn) => {
             // Phone disconnected. Refresh Reservations to capture wrapping
-            dispatch(requestRefreshReservations())
+            //dispatch(requestRefreshReservations())
           })
           // Twilio Client Insights feature.  Warning are received here
           conn.on('warning', (warning) => {
