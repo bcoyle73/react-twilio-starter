@@ -8,7 +8,6 @@ import QueueStats from '../taskrouter/QueueStats';
 
 const AgentWorkSpace = ({channels = [], currInteraction, participant = {} }) => {
   let component = null
-  console.log(currInteraction)
 
   switch (currInteraction) {
     case 'video':
@@ -35,7 +34,7 @@ const AgentWorkSpace = ({channels = [], currInteraction, participant = {} }) => 
 }
 
 AgentWorkSpace.propTypes = {
-  
+
 }
 
 export default AgentWorkSpace

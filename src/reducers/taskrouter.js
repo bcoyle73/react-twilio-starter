@@ -5,9 +5,7 @@ const taskrouter = (state = {
   worker: {},
   activities: [],
   channels: [],
-  reservations: [],
   tasks: [],
-  conference: {sid: "", participants: {customer: ""}},
 }, action) => {
   switch (action.type) {
     case 'CONNECTION_UPDATED':
@@ -35,14 +33,17 @@ const taskrouter = (state = {
       return Object.assign({}, state, {
         reservations: action.reservations
       });
-    case 'RESERVATION_CREATED':
+    case 'TASK_UPDATED':
       return Object.assign({}, state, {
         tasks: [
           ...state.tasks,
-          action.reservation.task
+          action.task
         ],
-        conference: action.reservation.task.attributes.conference
-      })
+      });
+    case 'TASK_COMPLETED':
+    return Object.assign({}, state, {
+      tasks: state.tasks.filter(task => task.sid !== action.task.sid)
+    });
     default:
       return state;
   }

@@ -12,16 +12,18 @@ const CallControl = ({
   isHeld,
   isRecording,
   recordingCallSid,
-  callSid,
-  confSid,
-  reservation
+  task
 }) => {
-  let buttons
+  let buttons, callSid, confSid
+  if (task) {
+    callSid = task.attributes.conference.participants.customer
+    confSid = task.attributes.conference.sid
+  }
   // if status is open then we are on a call
   if (status == "open") {
     buttons =
       <div>
-        <Button onClick={e => hangup(reservation, confSid)} classes={["hangup"]} buttonText="Hangup" />
+        <Button onClick={e => hangup(task, confSid)} classes={["hangup"]} buttonText="Hangup" />
         <Button onClick={mute} classes={["mute"]} buttonText={isMuted ? 'Unmute' : 'Mute' } />
         <Button onClick={e => hold(confSid, callSid)} classes={["hold"]} buttonText={isHeld ? 'UnHold' : 'Hold' } />
         <Button onClick={e => record(confSid, recordingCallSid)} classes={["hold"]} buttonText={isRecording ? "Pause" : "Record"} />
@@ -40,7 +42,7 @@ const CallControl = ({
 }
 
 CallControl.propTypes = {
-  
+
 }
 
 export default CallControl;

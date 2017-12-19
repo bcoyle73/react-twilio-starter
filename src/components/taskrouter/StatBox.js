@@ -1,7 +1,6 @@
 import React, { PropTypes } from 'react';
 
 const StatBox = ({statName, statValue}) => {
-  console.log(statName)
   let lowerCaseStat = statName.toLowerCase()
   let statusClass =  lowerCaseStat + '-status'
   let numClass = lowerCaseStat + '-num'

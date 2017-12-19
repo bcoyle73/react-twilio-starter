@@ -30,10 +30,17 @@ export function reservationsFetch(worker) {
   }
 }
 
-function reservationCreated(reservation) {
+function taskUpdated(task) {
   return {
-    type: 'RESERVATION_CREATED',
-    reservation: reservation
+    type: 'TASK_UPDATED',
+    task: task
+  }
+}
+
+function taskCompleted(task) {
+  return {
+    type: 'TASK_COMPLETED',
+    task: task
   }
 }
 
@@ -47,12 +54,11 @@ function reservationsUpdated(data) {
 export function requestTaskComplete(task) {
   return (dispatch) => {
     console.log("COMPLETE TASK")
-    console.log(task)
     task.complete((error, task) => {
       if (error) {
         console.log(error);
       }
-      console.log(task)
+      dispatch(taskCompleted(task))
     })
   }
 }
@@ -80,7 +86,6 @@ export function requestStateChange(newStateName) {
 
 export function requestWorker(workerSid) {
   return (dispatch, getState) => {
-    console.log(workerSid)
     dispatch(registerWorker())
     return fetch(urls.taskRouterToken, {
         method: "POST",
@@ -115,11 +120,20 @@ export function requestWorker(workerSid) {
 
         })
         worker.fetchReservations((error, reservations) => {
-           console.log(reservations.data, "RESERVATIONS")
-           if (reservations.data.length > 0) {
-             console.log("Your worker has reservations currently assigned to them")
-           }
-
+          if (error) {
+            console.log(error, "Reservations Fetch Error")
+          } else {
+            console.log(reservations.data, "RESERVATIONS")
+            if (reservations.data.length > 0) {
+              console.log("Your worker has reservations currently assigned to them")
+              for (let reservation of reservations.data) {
+                // dont display tasks arleady completed
+                if (reservation.task.assignmentStatus != "completed") {
+                  dispatch(taskUpdated(reservation.task))
+                }
+              }
+            }
+          }
         })
         dispatch(workerUpdated(worker))
         worker.on("ready", (worker) => {
@@ -162,7 +176,7 @@ export function requestWorker(workerSid) {
         worker.on('reservation.accepted', (reservation) => {
           console.log("Reservation Accepted")
           console.log(reservation, "RESERVATION ACCEPTED RESV")
-          dispatch(reservationCreated(reservation))
+          dispatch(taskUpdated(reservation.task))
           // Phone record is a demo of stop/start recording with ghost legs
           //dispatch(phoneRecord(reservation.task.attributes.conference.sid))
         })
@@ -405,7 +419,6 @@ export function requestConfTerminate(confSid) {
       .then(response => response.json())
       .then( json => {
         console.log(json, "Terminate conf response")
-        dispatch(requestTaskComplete(taskrouter.tasks[0]))
       })
   }
 }
