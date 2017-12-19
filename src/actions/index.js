@@ -22,6 +22,13 @@ export function workerUpdated(worker) {
   }
 }
 
+export function workerClientUpdated(worker) {
+  return {
+    type: 'WORKER_CLIENT_UPDATED',
+    worker: worker
+  }
+}
+
 export function reservationsFetch(worker) {
   return ( dispatch, getState ) => {
     worker.fetchReservations((error, reservations) => {
@@ -69,6 +76,32 @@ export function requestAcceptReservation() {
   }
 }
 
+// We have a generic action to refresh reservations as we
+// will need that after calls drop
+export function requestRefreshReservations() {
+  return (dispatch, getState) => {
+    const { taskrouter } = getState()
+    const { worker } = taskrouter
+    console.log(worker)
+    taskrouter.workerClient.fetchReservations((error, reservations) => {
+      if (error) {
+        console.log(error, "Reservations Fetch Error")
+      } else {
+        console.log(reservations.data, "RESERVATIONS")
+        if (reservations.data.length > 0) {
+          console.log("Your worker has reservations currently assigned to them")
+          for (let reservation of reservations.data) {
+            // dont display tasks arleady completed
+            if (reservation.task.assignmentStatus != "completed") {
+              dispatch(taskUpdated(reservation.task))
+            }
+          }
+        }
+      }
+    })
+  }
+}
+
 export function requestStateChange(newStateName) {
   return (dispatch, getState) => {
     const { taskrouter } = getState()
@@ -101,7 +134,8 @@ export function requestWorker(workerSid) {
         // --params token, debug, connectActivitySid, disconnectActivitySid, closeExistingSession
         // --see https://www.twilio.com/docs/api/taskrouter/worker-js#parameters
         let worker = new Twilio.TaskRouter.Worker(json.token, true, null, null, true )
-
+        dispatch(workerClientUpdated(worker))
+        console.log(worker)
         worker.activities.fetch((error, activityList) => {
           if (error) {
             console.log(error, "Activity Fetch Error")
@@ -119,23 +153,9 @@ export function requestWorker(workerSid) {
          }
 
         })
-        worker.fetchReservations((error, reservations) => {
-          if (error) {
-            console.log(error, "Reservations Fetch Error")
-          } else {
-            console.log(reservations.data, "RESERVATIONS")
-            if (reservations.data.length > 0) {
-              console.log("Your worker has reservations currently assigned to them")
-              for (let reservation of reservations.data) {
-                // dont display tasks arleady completed
-                if (reservation.task.assignmentStatus != "completed") {
-                  dispatch(taskUpdated(reservation.task))
-                }
-              }
-            }
-          }
-        })
-        dispatch(workerUpdated(worker))
+
+        dispatch(requestRefreshReservations())
+
         worker.on("ready", (worker) => {
           dispatch(workerConnectionUpdate("ready"))
           dispatch(workerUpdated(worker))
@@ -340,6 +360,10 @@ export function requestPhone(clientName) {
           // Call is connected. Register callback for events to make sure UI is updated
           conn.mute((boolean, connection) => {
             dispatch(phoneMuted(boolean))
+          })
+          conn.disconnect((conn) => {
+            // Phone disconnected. Refresh Reservations to capture wrapping
+            dispatch(requestRefreshReservations())
           })
           // Twilio Client Insights feature.  Warning are received here
           conn.on('warning', (warning) => {

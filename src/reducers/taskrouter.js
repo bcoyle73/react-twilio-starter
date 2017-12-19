@@ -2,6 +2,7 @@
 const taskrouter = (state = {
   isRegistering: false,
   connectionStatus: "disconnected",
+  workerClient: {},
   worker: {},
   activities: [],
   channels: [],
@@ -20,6 +21,10 @@ const taskrouter = (state = {
       return Object.assign({}, state, {
         isRegistering: false,
         worker: action.worker
+      });
+    case 'WORKER_CLIENT_UPDATED':
+      return Object.assign({}, state, {
+        workerClient: action.worker
       });
     case 'ACTIVITIES_UPDATED':
       return Object.assign({}, state, {
