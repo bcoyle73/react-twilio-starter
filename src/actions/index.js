@@ -230,7 +230,7 @@ export function requestWorker(workerSid) {
               }
               reservation.conference(null, null, null, null, null, options)
               break
-            case 'chat':
+            case 'sms':
               reservation.accept()
               dispatch(chatNewRequest(reservation.task))
               break
