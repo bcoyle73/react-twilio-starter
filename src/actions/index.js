@@ -633,9 +633,11 @@ function videoParticipantConnected(participant) {
 }
 
 const getActivitySid = (activities, activityName) => {
-  if (activities.length < 0 )
-    return "fail"
-  console.log(activities)
-  return activities.find((activity) =>
-    activity.friendlyName == activityName).sid;
+  let activity = activities.find((activity) =>
+    activity.friendlyName == activityName)
+  if (activity) {
+    return activity.sid
+  } else {
+    return "no-activity-found"
+  }
 }
