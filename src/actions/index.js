@@ -183,10 +183,12 @@ export function requestWorker(workerSid) {
           // You would want to provide the agent a notication of the error
           console.log("Websocket had an error: "+ error.response + " with message: "+error.message)
           console.log(error)
+          dispatch(errorTaskRouter("Error: " + error.message))
         })
         worker.on("disconnected", function() {
           // You would want to provide the agent a notication of the error
           dispatch(workerConnectionUpdate("disconnected"))
+          dispatch(errorTaskRouter("Web socket disconnection: " + error.message))
           console.log("Websocket has disconnected");
         })
         worker.on('reservation.timeout', (reservation) => {
