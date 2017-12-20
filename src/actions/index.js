@@ -8,6 +8,13 @@ function registerWorker() {
   }
 }
 
+function errorTaskRouter(message) {
+  return {
+    type: 'ERROR_TASKROUTER',
+    message: message
+  }
+}
+
 function workerConnectionUpdate(status) {
   return {
     type: 'CONNECTION_UPDATED',
@@ -85,7 +92,7 @@ export function requestRefreshReservations() {
     console.log(worker)
     taskrouter.workerClient.fetchReservations((error, reservations) => {
       if (error) {
-        console.log(error, "Reservations Fetch Error")
+        dispatch(errorTaskRouter("Fetching Reservations: " + error.message + " check your TaskRouter token policies"))
       } else {
         console.log(reservations.data, "RESERVATIONS")
         if (reservations.data.length > 0) {
@@ -109,6 +116,7 @@ export function requestStateChange(newStateName) {
     taskrouter.worker.update("ActivitySid", requestedActivitySid, (error, worker) => {
       if (error) {
         console.log(error);
+        dispatch(errorTaskRouter("Updating Worker Activity Sid: " + error.message))
       } else {
         console.log("STATE CHANGE", worker)
         dispatch(workerUpdated(worker))
@@ -125,7 +133,7 @@ export function requestWorker(workerSid) {
         headers: {
           "Content-Type": "application/x-www-form-urlencoded"
         },
-        body: "workerSid="+"WK93520723dd84ec131798ee97c293f4b4"
+        body: "workerSid="+workerSid
       })
       .then(response => response.json())
       .then(json => {
@@ -139,6 +147,7 @@ export function requestWorker(workerSid) {
         worker.activities.fetch((error, activityList) => {
           if (error) {
             console.log(error, "Activity Fetch Error")
+            dispatch(errorTaskRouter("Fetching Activites: " + error.message))
           } else {
             console.log(activityList)
              dispatch(activitiesUpdated(activityList.data))
@@ -267,6 +276,7 @@ export function requestWorker(workerSid) {
 
         })
       })
+      .then(() => console.log("ih"))
 
   }
 }
@@ -380,6 +390,7 @@ export function requestPhone(clientName) {
 	        dispatch(phoneConnectionUpdated(null))
         })
       })
+      .then(console.log("error"))
     }
 }
 
@@ -622,6 +633,8 @@ function videoParticipantConnected(participant) {
 }
 
 const getActivitySid = (activities, activityName) => {
+  if (activities.length < 0 )
+    return "fail"
   console.log(activities)
   return activities.find((activity) =>
     activity.friendlyName == activityName).sid;

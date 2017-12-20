@@ -15,6 +15,11 @@ const taskrouter = (state = {
       return Object.assign({}, state, {
         connectionStatus: action.status
       });
+    case 'ERROR_TASKROUTER':
+      return Object.assign({}, state, {
+        error: true,
+        errorMessage: action.message
+      });
     case 'REGISTER_WORKER':
       return Object.assign({}, state, {
         isRegistering: true
