@@ -15,7 +15,9 @@ const CallControl = ({
   task
 }) => {
   let buttons, callSid, confSid
-  if (task) {
+  // Make sure the conference attributes are there
+
+  if (task && typeof task.attributes.conference != "undefined") {
     callSid = task.attributes.conference.participants.customer
     confSid = task.attributes.conference.sid
   }
