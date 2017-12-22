@@ -133,7 +133,7 @@ export function requestWorker(workerSid) {
         headers: {
           "Content-Type": "application/x-www-form-urlencoded"
         },
-        body: "workerSid="+workerSid
+        body: "workerSid="+"WK93520723dd84ec131798ee97c293f4b4"
       })
       .then(response => response.json())
       .then(json => {
@@ -166,6 +166,7 @@ export function requestWorker(workerSid) {
         dispatch(requestRefreshReservations())
 
         worker.on("ready", (worker) => {
+          console.log(sforce, "SALESFORCE")
           dispatch(workerConnectionUpdate("ready"))
           dispatch(workerUpdated(worker))
           dispatch(requestPhone(worker.attributes.contact_uri.split(":").pop()))
@@ -185,7 +186,7 @@ export function requestWorker(workerSid) {
           console.log(error)
           dispatch(errorTaskRouter("Error: " + error.message))
         })
-        worker.on("disconnected", function() {
+        worker.on("disconnected", function(error) {
           // You would want to provide the agent a notication of the error
           dispatch(workerConnectionUpdate("disconnected"))
           dispatch(errorTaskRouter("Web socket disconnection: " + error.message))
@@ -231,6 +232,7 @@ export function requestWorker(workerSid) {
 
           switch (reservation.task.taskChannelUniqueName) {
             case 'voice':
+              sforce.opencti.searchAndScreenPop({ searchParams : "7034749718", queryParams : "", callType : sforce.opencti.CALL_TYPE.INBOUND,  deferred: false });
               const customerLeg = reservation.task.attributes.call_sid
               console.log(customerLeg, "customer call sid")
               console.log("Create a conference for agent and customer")

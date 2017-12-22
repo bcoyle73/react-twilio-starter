@@ -14,6 +14,7 @@ module.exports = {
   },
   devServer: {
     contentBase: "build/",
+    disableHostCheck: true,
     proxy: {
       "/api/*": {
         target: "http://localhost:3000",
