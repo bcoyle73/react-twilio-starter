@@ -125,6 +125,12 @@ export function requestStateChange(newStateName) {
   }
 }
 
+export function getWorkerSid() {
+  return (dispatch, getState) => {
+
+  }
+}
+
 export function requestWorker(workerSid) {
   return (dispatch, getState) => {
     dispatch(registerWorker())
@@ -167,6 +173,29 @@ export function requestWorker(workerSid) {
 
         worker.on("ready", (worker) => {
           console.log(sforce, "SALESFORCE")
+          sforce.opencti.enableClickToDial({
+               callback: (result) => console.log(result.success, "dial")
+          })
+          sforce.opencti.onClickToDial({
+             listener: (payload) => {
+               sforce.opencti.setSoftphonePanelVisibility({
+                   visible: true,
+                 });
+                 dispatch(phoneCall("7034749718"))
+               }
+          })
+          sforce.opencti.runApex({
+              apexClass: "UserInfo",
+              methodName: "getUserId",
+              methodParams: null,
+              callback: (response) => console.log(response, "GET USER INFO")
+          })
+          sforce.opencti.runApex({
+              apexClass: "TwilioUser",
+              methodName: "getWorkerSid",
+              methodParams: "userId=005U0000000Dty7IAC",
+              callback: (response) => console.log(response, "GET USER")
+          })
           dispatch(workerConnectionUpdate("ready"))
           dispatch(workerUpdated(worker))
           dispatch(requestPhone(worker.attributes.contact_uri.split(":").pop()))
@@ -185,11 +214,13 @@ export function requestWorker(workerSid) {
           console.log("Websocket had an error: "+ error.response + " with message: "+error.message)
           console.log(error)
           dispatch(errorTaskRouter("Error: " + error.message))
+          dispatch(requestWorker(workerSid))
         })
         worker.on("disconnected", function(error) {
           // You would want to provide the agent a notication of the error
           dispatch(workerConnectionUpdate("disconnected"))
           dispatch(errorTaskRouter("Web socket disconnection: " + error.message))
+          dispatch(requestWorker(workerSid))
           console.log("Websocket has disconnected");
         })
         worker.on('reservation.timeout', (reservation) => {
@@ -233,6 +264,9 @@ export function requestWorker(workerSid) {
           switch (reservation.task.taskChannelUniqueName) {
             case 'voice':
               sforce.opencti.searchAndScreenPop({ searchParams : "7034749718", queryParams : "", callType : sforce.opencti.CALL_TYPE.INBOUND,  deferred: false });
+              sforce.opencti.setSoftphonePanelVisibility({
+                  visible: true,
+                });
               const customerLeg = reservation.task.attributes.call_sid
               console.log(customerLeg, "customer call sid")
               console.log("Create a conference for agent and customer")
@@ -484,12 +518,13 @@ export function phoneButtonPushed(digit) {
   }
 }
 
-export function phoneCall() {
+export function phoneCall(phoneNumber = null) {
   return (dispatch, getState) => {
     // Call the number that is currently in the number box
     // pass the from and to number for the phone call as well as agent name
     const { phone, taskrouter } = getState()
     console.log("call clicked to " + phone.dialPadNumber)
+    var numberToCall = phoneNumber || phone.dialPadNumber
 
     return fetch(urls.callOutbound,
       {
@@ -499,7 +534,7 @@ export function phoneCall() {
         'Content-Type': 'application/x-www-form-urlencoded'
       },
         body:
-          "To=" + phone.dialPadNumber + "&" +
+          "To=" + numberToCall + "&" +
           "From=" + taskrouter.worker.attributes.phone_number + "&" +
           "Agent=" + taskrouter.worker.friendlyName + "&" +
           "Token=" + taskrouter.worker.token
