@@ -93,6 +93,7 @@ export function requestWorker(workerSid) {
       .then(response => response.json())
       .then(json => {
         console.log(json)
+        debugger
         // Register your TaskRouter Worker
         // --params token, debug, connectActivitySid, disconnectActivitySid, closeExistingSession
         // --see https://www.twilio.com/docs/api/taskrouter/worker-js#parameters
@@ -151,7 +152,7 @@ export function requestWorker(workerSid) {
           console.log("Reservation Accepted")
           console.log(reservation, "RESERVATION ACCEPTED RESV")
           dispatch(reservationCreated(reservation))
-          // Phone record is a demo of stop/start recording with ghost legs  
+          // Phone record is a demo of stop/start recording with ghost legs
           //dispatch(phoneRecord(reservation.task.attributes.conference.sid))
         })
         worker.on("attributes.update", function(channel) {
@@ -173,16 +174,23 @@ export function requestWorker(workerSid) {
           console.log(reservation)
           switch (reservation.task.taskChannelUniqueName) {
             case 'voice':
-              const customerLeg = reservation.task.attributes.call_sid
-              console.log(customerLeg, "customer call sid")
-              console.log("Create a conference for agent and customer")
-              var options = {
-                  "ConferenceStatusCallback": urls.baseUrl + "/api/calls/conference/events/" + customerLeg,
-                  "ConferenceStatusCallbackEvent": "start,leave,join,end",
-                  "EndConferenceOnExit": "false",
-                  "Beep": "false"
+              if (reservation.task.attributes.type == 'transfer') {
+                reservation.call('15304412022',
+                                  'https://absurd-pizzas-9864.twil.io/internal-transfer-callback?conferenceSid=' + reservation.task.attributes.confName,
+                                  null,
+                                  'true')
+              } else {
+                const customerLeg = reservation.task.attributes.call_sid
+                console.log(customerLeg, "customer call sid")
+                console.log("Create a conference for agent and customer")
+                var options = {
+                    "ConferenceStatusCallback": urls.baseUrl + "/conference-events?call+sid=" + customerLeg,
+                    "ConferenceStatusCallbackEvent": "start,leave,join,end",
+                    "EndConferenceOnExit": "false",
+                    "Beep": "false"
+                }
+                reservation.conference(null, null, null, null, null, options)
               }
-              reservation.conference(null, null, null, null, null, options)
               break
             case 'chat':
               reservation.accept()
@@ -200,12 +208,12 @@ export function requestWorker(workerSid) {
               try {
               reservation.call(
                 from,
-                urls.baseUrl + "/api/calls/outbound/dial/" + to + "/from/" + from + "/conf/" + taskSid,
-                urls.baseUrl + "/api/taskrouter/event/",
+                'https://absurd-pizzas-9864.twil.io/' + "outbound-callback?dialOut=" + to + "&from=" + from + "&sid=" + taskSid,
+                urls.baseUrl + "taskrouter-event",
                 "true",
                 "",
                 "",
-                urls.baseUrl + "/api/taskrouter/event"
+                urls.baseUrl + "taskrouter-event"
               )
             } catch(error) {
               console.log("ERROR CALL", error)
@@ -350,6 +358,25 @@ export function phoneHold(confSid, callSid) {
   }
 }
 
+export function phoneTransfer(confName) {
+   return (dispatch, getState) => {
+     const { taskrouter } = getState()
+     return fetch(urls.internalTransfer,
+       {
+          headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+         },
+         method: "POST",
+         body: "agent_id=bcoyle&conferenceSid=" + confName + "&token="+taskrouter.worker.token,
+       })
+       .then(response => response.json())
+       .then( json => {
+         console.log(json)
+       })
+   }
+}
+
+
 export function phoneRecord(confSid, currentState) {
   return(dispatch, getState) => {
     return fetch(`/api/calls/record/${confSid}`,{method: "POST"})
@@ -424,20 +451,16 @@ export function phoneCall() {
     const { phone, taskrouter } = getState()
     console.log("call clicked to " + phone.dialPadNumber)
 
-    return fetch(`/api/taskrouter/outbound`,
+    return fetch(urls.baseUrl + 'outbound',
       {
         method: "POST",
         headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/x-www-form-urlencoded'
       },
-        body:
-          JSON.stringify({
-          To: phone.dialPadNumber,
-          From: taskrouter.worker.attributes.phone_number,
-          Agent: taskrouter.worker.friendlyName
-        })
-
+        body: "To="+phone.dialPadNumber+
+              "&From="+taskrouter.worker.attributes.phone_number+
+              "&Agent="+taskrouter.worker.friendlyName+
+              "&Token="+taskrouter.worker.token
       })
       .then(response => response.json())
       .then( json => {

@@ -31478,6 +31478,7 @@
 	    device: {},
 	    isMuted: false,
 	    isRecording: false,
+	    isHeld: false,
 	    recordingLegSid: "",
 	    warning: "",
 	    isRegistered: false,
@@ -31507,6 +31508,10 @@
 	    case 'PHONE_MUTED':
 	      return Object.assign({}, state, {
 	        isMuted: action.boolean
+	      });
+	    case 'PHONE_HELD':
+	      return Object.assign({}, state, {
+	        isHeld: action.boolean
 	      });
 	    case 'PHONE_RECORD_ON':
 	      return Object.assign({}, state, {
@@ -31763,6 +31768,7 @@
 	      if (error) {
 	        console.log(error);
 	      }
+	      console.log(task);
 	    });
 	  };
 	}
@@ -31781,6 +31787,7 @@
 	      if (error) {
 	        console.log(error);
 	      } else {
+	        console.log("STATE CHANGE", worker);
 	        dispatch(workerUpdated(worker));
 	      }
 	    });
@@ -31801,22 +31808,28 @@
 	      return response.json();
 	    }).then(function (json) {
 	      console.log(json);
-	      var worker = new Twilio.TaskRouter.Worker(json.token, true, null, "WA564faeb747a2683f929ea700579eeed5", true);
+	      // Register your TaskRouter Worker
+	      // --params token, debug, connectActivitySid, disconnectActivitySid, closeExistingSession
+	      // --see https://www.twilio.com/docs/api/taskrouter/worker-js#parameters
+	      var worker = new Twilio.TaskRouter.Worker(json.token, true, null, null, true);
 
 	      worker.activities.fetch(function (error, activityList) {
 	        dispatch(activitiesUpdated(activityList.data));
 	      });
+	      worker.fetchChannels(function (error, channels) {
+	        dispatch(channelsUpdated(channels.data));
+	      });
 	      worker.fetchReservations(function (error, reservations) {
 	        console.log(reservations.data, "RESERVATIONS");
 	        if (reservations.data.length > 0) {
-	          console.log("call into conf");
+	          console.log("Your worker has reservations currently assigned to them");
 	        }
 	      });
 	      dispatch(workerUpdated(worker));
 	      worker.on("ready", function (worker) {
 	        dispatch(workerUpdated(worker));
 	        dispatch(requestPhone(worker.friendlyName));
-	        dispatch(requestChat(worker.friendlyName));
+	        //dispatch(requestChat(worker.friendlyName))
 	        console.log("worker obj", worker);
 	      });
 	      worker.on('activity.update', function (worker) {
@@ -31837,12 +31850,37 @@
 	      worker.on('reservation.timeout', function (reservation) {
 	        console.log("Reservation Timed Out");
 	      });
+	      // Another worker has accepted the task
+	      worker.on('reservation.rescinded', function (reservation) {
+	        console.log("Reservation Rescinded");
+	      });
+	      worker.on('reservation.rejected', function (reservation) {
+	        console.log("Reservation Rejected");
+	      });
+	      worker.on('reservation.cancelled', function (reservation) {
+	        console.log("Reservation Cancelled");
+	      });
 	      worker.on('reservation.accepted', function (reservation) {
 	        console.log("Reservation Accepted");
 	        console.log(reservation, "RESERVATION ACCEPTED RESV");
 	        dispatch(reservationCreated(reservation));
+	        // Phone record is a demo of stop/start recording with ghost legs  
 	        //dispatch(phoneRecord(reservation.task.attributes.conference.sid))
 	      });
+	      worker.on("attributes.update", function (channel) {
+
+	        console.log("Worker attributes updated", channel);
+	      });
+	      worker.on("channel.availability.update", function (channel) {
+
+	        console.log("Channel availability updated", channel);
+	      });
+
+	      worker.on("channel.capacity.update", function (channel) {
+
+	        console.log("Channel capacity updated", channel);
+	      });
+
 	      worker.on('reservation.created', function (reservation) {
 	        console.log("Incoming reservation");
 	        console.log(reservation);
@@ -31852,7 +31890,7 @@
 	            console.log(customerLeg, "customer call sid");
 	            console.log("Create a conference for agent and customer");
 	            var options = {
-	              "ConferenceStatusCallback": ("http://thinkvoice.ngrok.io") + "/api/calls/conference/events/" + customerLeg,
+	              "ConferenceStatusCallback": _configureUrls2.default.baseUrl + "/api/calls/conference/events/" + customerLeg,
 	              "ConferenceStatusCallbackEvent": "start,leave,join,end",
 	              "EndConferenceOnExit": "false",
 	              "Beep": "false"
@@ -31868,10 +31906,15 @@
 	            dispatch(videoRequest(reservation.task));
 	            break;
 	          case 'custom1':
-	            var sid = reservation.task.sid;
+	            var taskSid = reservation.task.sid;
 	            var to = reservation.task.attributes.to;
 	            var from = reservation.task.attributes.from;
-	            reservation.call(from, ("http://thinkvoice.ngrok.io") + "/api/calls/outbound/dial/" + to + "/from/" + from + "/conf/" + sid, ("http://thinkvoice.ngrok.io") + "/api/taskrouter/event", "true", "", "", ("http://thinkvoice.ngrok.io") + "/api/taskrouter/event");
+	            console.log(reservation, "OUTBOUTND");
+	            try {
+	              reservation.call(from, _configureUrls2.default.baseUrl + "/api/calls/outbound/dial/" + to + "/from/" + from + "/conf/" + taskSid, _configureUrls2.default.baseUrl + "/api/taskrouter/event/", "true", "", "", _configureUrls2.default.baseUrl + "/api/taskrouter/event");
+	            } catch (error) {
+	              console.log("ERROR CALL", error);
+	            }
 
 	            break;
 	          default:
@@ -31912,6 +31955,13 @@
 	function phoneMuted(boolean) {
 	  return {
 	    type: 'PHONE_MUTED',
+	    boolean: boolean
+	  };
+	}
+
+	function phoneHeld(boolean) {
+	  return {
+	    type: 'PHONE_HELD',
 	    boolean: boolean
 	  };
 	}
@@ -31988,10 +32038,22 @@
 
 	function phoneHold(confSid, callSid) {
 	  return function (dispatch, getState) {
-	    return (0, _isomorphicFetch2.default)('/api/calls/conference/' + confSid + '/hold/' + callSid + '/true', { method: "POST" }).then(function (response) {
+	    var _getState3 = getState(),
+	        taskrouter = _getState3.taskrouter,
+	        phone = _getState3.phone;
+
+	    var newHoldState = !phone.isHeld;
+	    return (0, _isomorphicFetch2.default)(_configureUrls2.default.callHold, {
+	      method: "POST",
+	      headers: {
+	        "Content-Type": "application/x-www-form-urlencoded"
+	      },
+	      body: "conference_sid=" + confSid + "&call_sid=" + callSid + "&toggle=" + newHoldState + "&token=" + taskrouter.worker.token
+	    }).then(function (response) {
 	      return response.json();
 	    }).then(function (json) {
 	      console.log(json);
+	      dispatch(phoneHeld(json.result));
 	    });
 	  };
 	}
@@ -32020,32 +32082,48 @@
 	  };
 	}
 
+	// This action is tied to the hangup phone phone button
+	// - this action will call down to server which complete's the conference
+	// - which then terminates all participant's calls
+	// - after getting a response from the server this will update the task as complete
 	function requestConfTerminate(confSid) {
 	  return function (dispatch, getState) {
-	    return (0, _isomorphicFetch2.default)('/api/calls/conference/' + confSid + '/terminate', { method: "POST" }).then(function (response) {
+	    var _getState4 = getState(),
+	        taskrouter = _getState4.taskrouter;
+
+	    return (0, _isomorphicFetch2.default)(_configureUrls2.default.conferenceTerminate, {
+	      method: "POST",
+	      headers: {
+	        "Content-Type": "application/x-www-form-urlencoded"
+	      },
+	      body: "conferenceSid=" + confSid + "&token=" + taskrouter.worker.token
+	    }).then(function (response) {
 	      return response.json();
 	    }).then(function (json) {
 	      console.log(json);
+	      dispatch(requestTaskComplete(taskrouter.reservations[0]));
 	    });
 	  };
 	}
 
+	// Phone Mute will use the Twilio Device to Mute the call
+	// -- After the phone is muted a callback will fired to update
+	// -- the redux store.
 	function phoneMute() {
 	  return function (dispatch, getState) {
-	    var _getState3 = getState(),
-	        phone = _getState3.phone;
+	    var _getState5 = getState(),
+	        phone = _getState5.phone;
 
 	    console.log("mute clicked");
 	    console.log("Current call is muted? " + phone.currentCall.isMuted());
-
 	    phone.currentCall.mute(!phone.currentCall.isMuted());
 	  };
 	}
 
 	function phoneButtonPushed(digit) {
 	  return function (dispatch, getState) {
-	    var _getState4 = getState(),
-	        phone = _getState4.phone;
+	    var _getState6 = getState(),
+	        phone = _getState6.phone;
 
 	    console.log("dial pad clicked ", digit);
 
@@ -32057,9 +32135,9 @@
 	  return function (dispatch, getState) {
 	    // Call the number that is currently in the number box
 	    // pass the from and to number for the phone call as well as agent name
-	    var _getState5 = getState(),
-	        phone = _getState5.phone,
-	        taskrouter = _getState5.taskrouter;
+	    var _getState7 = getState(),
+	        phone = _getState7.phone,
+	        taskrouter = _getState7.taskrouter;
 
 	    console.log("call clicked to " + phone.dialPadNumber);
 
@@ -32095,8 +32173,8 @@
 
 	function phoneHangup() {
 	  return function (dispatch, getState) {
-	    var _getState6 = getState(),
-	        phone = _getState6.phone;
+	    var _getState8 = getState(),
+	        phone = _getState8.phone;
 
 	    phone.currentCall.disconnect();
 	  };
@@ -32689,12 +32767,13 @@
 
 	'use strict';
 
-	var baseUrl = 'https://axiomatic-wilderness-2842.twil.io/';
+	var baseUrl = 'https://absurd-pizzas-9864.twil.io/';
 
 	module.exports = {
-	  taskRouterToken: baseUrl + 'token-taskrouter',
-	  clientToken: baseUrl + 'token-client'
-
+	  baseUrl: baseUrl,
+	  taskRouterToken: baseUrl + 'taskrouter-client-token',
+	  clientToken: baseUrl + 'twilio-client-token',
+	  conferenceTerminate: baseUrl + 'terminate-conference'
 	};
 
 /***/ }),
@@ -33177,6 +33256,7 @@
 	  return {
 	    status: phone.currentCall._status,
 	    isMuted: phone.isMuted,
+	    isHeld: phone.isHeld,
 	    isRecording: phone.isRecording,
 	    recordingCallSid: phone.recordingLegSid,
 	    callSid: caller,
@@ -33257,6 +33337,7 @@
 	      onHoldClick = _ref.onHoldClick,
 	      onRecordClick = _ref.onRecordClick,
 	      isMuted = _ref.isMuted,
+	      isHeld = _ref.isHeld,
 	      isRecording = _ref.isRecording,
 	      recordingCallSid = _ref.recordingCallSid,
 	      callSid = _ref.callSid,
@@ -33267,7 +33348,7 @@
 	    { id: 'dialer' },
 	    _react2.default.createElement(_NumberEntry2.default, { entry: onNumberEntryChange }),
 	    _react2.default.createElement(_KeyPad2.default, { buttonPress: onKeyPadNumberClick }),
-	    _react2.default.createElement(_CallControl2.default, { call: onCallClick, status: status, isMuted: isMuted, recordingCallSid: recordingCallSid, isRecording: isRecording, hangup: onHangupClick, mute: onMuteClick, hold: onHoldClick, record: onRecordClick, callSid: callSid, confSid: confSid, reservation: reservation })
+	    _react2.default.createElement(_CallControl2.default, { call: onCallClick, status: status, isMuted: isMuted, isHeld: isHeld, recordingCallSid: recordingCallSid, isRecording: isRecording, hangup: onHangupClick, mute: onMuteClick, hold: onHoldClick, record: onRecordClick, callSid: callSid, confSid: confSid, reservation: reservation })
 	  );
 	};
 
@@ -33384,6 +33465,7 @@
 	      hold = _ref.hold,
 	      record = _ref.record,
 	      isMuted = _ref.isMuted,
+	      isHeld = _ref.isHeld,
 	      isRecording = _ref.isRecording,
 	      recordingCallSid = _ref.recordingCallSid,
 	      callSid = _ref.callSid,
@@ -33402,7 +33484,7 @@
 	      _react2.default.createElement(_Button2.default, { onClick: mute, classes: ["mute"], buttonText: isMuted ? 'Unmute' : 'Mute' }),
 	      _react2.default.createElement(_Button2.default, { onClick: function onClick(e) {
 	          return hold(confSid, callSid);
-	        }, classes: ["hold"], buttonText: 'Hold' }),
+	        }, classes: ["hold"], buttonText: isHeld ? 'UnHold' : 'Hold' }),
 	      _react2.default.createElement(_Button2.default, { onClick: function onClick(e) {
 	          return record(confSid, recordingCallSid);
 	        }, classes: ["hold"], buttonText: isRecording ? "Pause" : "Record" }),

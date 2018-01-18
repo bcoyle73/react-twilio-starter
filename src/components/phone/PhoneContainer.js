@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Phone from './phone';
-import {phoneMute, phoneHangup, phoneButtonPushed, phoneHold, phoneCall, dialPadUpdated, requestTaskComplete, requestConfTerminate} from '../../actions'
+import {phoneMute, phoneHangup, phoneButtonPushed, phoneHold, phoneTransfer, phoneCall, dialPadUpdated, requestTaskComplete, requestConfTerminate} from '../../actions'
 import { connect } from 'react-redux'
 
 
@@ -43,6 +43,9 @@ const mapDispatchToProps = (dispatch) => {
     },
     onHoldClick: (confSid, callSid) => {
       dispatch(phoneHold(confSid, callSid))
+    },
+    onTransferClick: (reservation) => {
+      dispatch(phoneTransfer(reservation.taskSid))
     },
     onRecordClick: (confSid, callSid) => {
       dispatch(phoneHold(confSid, callSid))

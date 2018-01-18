@@ -8,6 +8,7 @@ const CallControl = ({
   call,
   hold,
   record,
+  transfer,
   isMuted,
   isHeld,
   isRecording,
@@ -25,7 +26,7 @@ const CallControl = ({
         <Button onClick={mute} classes={["mute"]} buttonText={isMuted ? 'Unmute' : 'Mute' } />
         <Button onClick={e => hold(confSid, callSid)} classes={["hold"]} buttonText={isHeld ? 'UnHold' : 'Hold' } />
         <Button onClick={e => record(confSid, recordingCallSid)} classes={["hold"]} buttonText={isRecording ? "Pause" : "Record"} />
-        <Button onClick={e => hold(confSid, callSid)} classes={["hold"]} buttonText="Transfer" />
+        <Button onClick={e => transfer(reservation)} classes={["hold"]} buttonText="Transfer" />
       </div>
   } else {
     buttons = <Button onClick={e => call()} classes={["call"]} buttonText="Call" />
