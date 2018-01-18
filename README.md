@@ -6,9 +6,27 @@ NOTE: This includes a node server backend which includes the functionality curre
 ## Setup
 
 ### Twilio Product Setup
+* Turn on Agent Conference - https://www.twilio.com/console/voice/settings/conferences
 * Create a TaskRouter Workspace - https://www.twilio.com/console/taskrouter/workspaces
 * On the workspace setting page enable **Multitasking**
-
+* Buy a new phone number
+* Create a new worker and add the following attributes
+```sh
+{"contact_uri":"client:YOUR WORKER FRIENDLY NAME", "agent_name":"YOUR WORKER FRIENDLY NAME", "phone_number":"A PHONE NUMBER ON YOUR ACCOUNT"}
+```
+*note: these attributes are used by the code and workflow in this example. Your production attributes will depend on your own routing rules*
+* Create a new TaskQueue 
+  * Name - name your queue
+  * Target Workers - 1==1 *This ensures all workers are available for this queue and is useful for testing*
+  * Keep the rest of the defaults
+* Create a new Workflow
+  * Name - name your queue
+  * Leave Assignment Callback blank. For this example we will handle assignments in the browser
+  * Choose your queue above as Default Queue
+  * Add a Filter to your Workflow
+    * EXPRESSION = direction == 'outbound'
+    * TARGET WORKERS EXPRESSION = task.agent_id==worker.agent_name
+  * **Note-These expressions are for use with this sample app.  Your production app can use any matching criteria you choose.**
 
 
 ### Twilio Functions Backend

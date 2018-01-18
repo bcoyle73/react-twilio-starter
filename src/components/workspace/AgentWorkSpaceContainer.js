@@ -15,7 +15,6 @@ class AgentWorkSpaceContainer extends Component {
     // When this top level component loads get the worker sid from the URL
     const { dispatch } = this.props
     var url = new URL(window.location.href)
-    console.log(url.searchParams.get("worker"))
     dispatch(requestWorker(url.searchParams.get("worker")))
   }
 
@@ -25,13 +24,11 @@ class AgentWorkSpaceContainer extends Component {
 
 
   render() {
-    const { channels, reservations, participant } = this.props
+    const { channels, participant, error, errorMessage } = this.props
     let current = "default"
-    if (reservations.length > 0){
-      current = reservations[0].task.taskChannelUniqueName
-    }
+
     return (
-    	<AgentWorkSpace channels={channels} currInteraction={current} participant={participant}/>
+    	<AgentWorkSpace channels={channels} currInteraction={current} participant={participant} error={error} errorMessage={errorMessage}/>
     );
   }
 }
@@ -39,8 +36,9 @@ class AgentWorkSpaceContainer extends Component {
 const mapStateToProps = (state) => {
   return {
     channels: state.taskrouter.channels,
-    reservations: state.taskrouter.reservations,
-    participant: state.chat.videoParticipant
+    participant: state.chat.videoParticipant,
+    error: state.taskrouter.error,
+    errorMessage: state.taskrouter.errorMessage
   }
 }
 

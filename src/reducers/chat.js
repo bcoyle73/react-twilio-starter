@@ -5,7 +5,6 @@ const chat = (state = {
   messages:[],
   videoParticipant: null
 }, action) => {
-  console.log(action.type)
   switch (action.type) {
     case 'REGISTER_CHAT':
       return Object.assign({}, state, {

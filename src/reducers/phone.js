@@ -9,7 +9,6 @@ const phone = (state = {
   isRegistered: false,
   dialPadNumber: "",
 }, action) => {
-  console.log(action.type)
   switch (action.type) {
     case 'REGISTER_PHONE':
       return Object.assign({}, state, {

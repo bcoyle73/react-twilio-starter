@@ -5,5 +5,8 @@ module.exports = {
   taskRouterToken: baseUrl + 'taskrouter-client-token',
   clientToken: baseUrl + 'twilio-client-token',
   conferenceTerminate: baseUrl + 'terminate-conference',
-  internalTransfer: baseUrl + 'internal-transfer',
+  conferenceEvents: baseUrl + 'conference-event',
+  callHold: baseUrl + 'hold-call',
+  callOutbound: baseUrl + 'outbound',
+  callOutboundCallback: baseUrl + 'outbound-call-callback',
 }

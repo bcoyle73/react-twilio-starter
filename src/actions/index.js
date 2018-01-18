@@ -8,6 +8,20 @@ function registerWorker() {
   }
 }
 
+function errorTaskRouter(message) {
+  return {
+    type: 'ERROR_TASKROUTER',
+    message: message
+  }
+}
+
+function workerConnectionUpdate(status) {
+  return {
+    type: 'CONNECTION_UPDATED',
+    status: status
+  }
+}
+
 export function workerUpdated(worker) {
   return {
     type: 'WORKER_UPDATED',
@@ -15,11 +29,10 @@ export function workerUpdated(worker) {
   }
 }
 
-export function currentActivityFetch(worker) {
-  return ( dispatch, getState ) => {
-    worker.fetchReservations((error, reservations) => {
-      dispatch(reservationsUpdated(reservations.data))
-    })
+export function workerClientUpdated(worker) {
+  return {
+    type: 'WORKER_CLIENT_UPDATED',
+    worker: worker
   }
 }
 
@@ -31,10 +44,17 @@ export function reservationsFetch(worker) {
   }
 }
 
-function reservationCreated(reservation) {
+function taskUpdated(task) {
   return {
-    type: 'RESERVATION_CREATED',
-    reservation: reservation
+    type: 'TASK_UPDATED',
+    task: task
+  }
+}
+
+function taskCompleted(task) {
+  return {
+    type: 'TASK_COMPLETED',
+    task: task
   }
 }
 
@@ -45,15 +65,14 @@ function reservationsUpdated(data) {
   }
 }
 
-export function requestTaskComplete(reservation) {
+export function requestTaskComplete(task) {
   return (dispatch) => {
-    console.log("I AM GOING TO COMPLETE " + reservation.taskSid)
-    console.log("ITS CURRENT ASSIGNMENT STATIS is " + reservation.reservationStatus)
-    reservation.task.complete((error, task) => {
+    console.log("COMPLETE TASK")
+    task.complete((error, task) => {
       if (error) {
         console.log(error);
       }
-      console.log(task)
+      dispatch(taskCompleted(task))
     })
   }
 }
@@ -64,6 +83,32 @@ export function requestAcceptReservation() {
   }
 }
 
+// We have a generic action to refresh reservations as we
+// will need that after calls drop
+export function requestRefreshReservations() {
+  return (dispatch, getState) => {
+    const { taskrouter } = getState()
+    const { worker } = taskrouter
+    console.log(worker)
+    taskrouter.workerClient.fetchReservations((error, reservations) => {
+      if (error) {
+        dispatch(errorTaskRouter("Fetching Reservations: " + error.message + " check your TaskRouter token policies"))
+      } else {
+        console.log(reservations.data, "RESERVATIONS")
+        if (reservations.data.length > 0) {
+          console.log("Your worker has reservations currently assigned to them")
+          for (let reservation of reservations.data) {
+            // dont display tasks arleady completed
+            if (reservation.task.assignmentStatus != "completed") {
+              dispatch(taskUpdated(reservation.task))
+            }
+          }
+        }
+      }
+    })
+  }
+}
+
 export function requestStateChange(newStateName) {
   return (dispatch, getState) => {
     const { taskrouter } = getState()
@@ -71,6 +116,7 @@ export function requestStateChange(newStateName) {
     taskrouter.worker.update("ActivitySid", requestedActivitySid, (error, worker) => {
       if (error) {
         console.log(error);
+        dispatch(errorTaskRouter("Updating Worker Activity Sid: " + error.message))
       } else {
         console.log("STATE CHANGE", worker)
         dispatch(workerUpdated(worker))
@@ -81,7 +127,6 @@ export function requestStateChange(newStateName) {
 
 export function requestWorker(workerSid) {
   return (dispatch, getState) => {
-    console.log(workerSid)
     dispatch(registerWorker())
     return fetch(urls.taskRouterToken, {
         method: "POST",
@@ -98,25 +143,33 @@ export function requestWorker(workerSid) {
         // --params token, debug, connectActivitySid, disconnectActivitySid, closeExistingSession
         // --see https://www.twilio.com/docs/api/taskrouter/worker-js#parameters
         let worker = new Twilio.TaskRouter.Worker(json.token, true, null, null, true )
-
+        dispatch(workerClientUpdated(worker))
+        console.log(worker)
         worker.activities.fetch((error, activityList) => {
-           dispatch(activitiesUpdated(activityList.data))
+          if (error) {
+            console.log(error, "Activity Fetch Error")
+            dispatch(errorTaskRouter("Fetching Activites: " + error.message))
+          } else {
+            console.log(activityList)
+             dispatch(activitiesUpdated(activityList.data))
+          }
         })
         worker.fetchChannels((error, channels) => {
-           dispatch(channelsUpdated(channels.data))
+          if (error) {
+            console.log(error, "Channels Fetch Error")
+          } else {
+            console.log(channels)
+            dispatch(channelsUpdated(channels.data))
+         }
 
         })
-        worker.fetchReservations((error, reservations) => {
-           console.log(reservations.data, "RESERVATIONS")
-           if (reservations.data.length > 0) {
-             console.log("Your worker has reservations currently assigned to them")
-           }
 
-        })
-        dispatch(workerUpdated(worker))
+        dispatch(requestRefreshReservations())
+
         worker.on("ready", (worker) => {
+          dispatch(workerConnectionUpdate("ready"))
           dispatch(workerUpdated(worker))
-          dispatch(requestPhone(worker.friendlyName))
+          dispatch(requestPhone(worker.attributes.contact_uri.split(":").pop()))
           //dispatch(requestChat(worker.friendlyName))
           console.log("worker obj", worker)
         })
@@ -130,9 +183,13 @@ export function requestWorker(workerSid) {
         worker.on('error', (error) => {
           // You would want to provide the agent a notication of the error
           console.log("Websocket had an error: "+ error.response + " with message: "+error.message)
+          console.log(error)
+          dispatch(errorTaskRouter("Error: " + error.message))
         })
         worker.on("disconnected", function() {
           // You would want to provide the agent a notication of the error
+          dispatch(workerConnectionUpdate("disconnected"))
+          dispatch(errorTaskRouter("Web socket disconnection: " + error.message))
           console.log("Websocket has disconnected");
         })
         worker.on('reservation.timeout', (reservation) => {
@@ -151,7 +208,7 @@ export function requestWorker(workerSid) {
         worker.on('reservation.accepted', (reservation) => {
           console.log("Reservation Accepted")
           console.log(reservation, "RESERVATION ACCEPTED RESV")
-          dispatch(reservationCreated(reservation))
+          dispatch(taskUpdated(reservation.task))
           // Phone record is a demo of stop/start recording with ghost legs
           //dispatch(phoneRecord(reservation.task.attributes.conference.sid))
         })
@@ -172,6 +229,7 @@ export function requestWorker(workerSid) {
         worker.on('reservation.created', (reservation) => {
           console.log("Incoming reservation")
           console.log(reservation)
+
           switch (reservation.task.taskChannelUniqueName) {
             case 'voice':
               if (reservation.task.attributes.type == 'transfer') {
@@ -192,7 +250,7 @@ export function requestWorker(workerSid) {
                 reservation.conference(null, null, null, null, null, options)
               }
               break
-            case 'chat':
+            case 'sms':
               reservation.accept()
               dispatch(chatNewRequest(reservation.task))
               break
@@ -205,7 +263,6 @@ export function requestWorker(workerSid) {
               const to = reservation.task.attributes.to
               const from = reservation.task.attributes.from
               console.log(reservation, "OUTBOUTND")
-              try {
               reservation.call(
                 from,
                 'https://absurd-pizzas-9864.twil.io/' + "outbound-callback?dialOut=" + to + "&from=" + from + "&sid=" + taskSid,
@@ -215,9 +272,6 @@ export function requestWorker(workerSid) {
                 "",
                 urls.baseUrl + "taskrouter-event"
               )
-            } catch(error) {
-              console.log("ERROR CALL", error)
-            }
 
               break
             default:
@@ -226,6 +280,7 @@ export function requestWorker(workerSid) {
 
         })
       })
+      .then(() => console.log("ih"))
 
   }
 }
@@ -321,6 +376,10 @@ export function requestPhone(clientName) {
           conn.mute((boolean, connection) => {
             dispatch(phoneMuted(boolean))
           })
+          conn.disconnect((conn) => {
+            // Phone disconnected. Refresh Reservations to capture wrapping
+            //dispatch(requestRefreshReservations())
+          })
           // Twilio Client Insights feature.  Warning are received here
           conn.on('warning', (warning) => {
             dispatch(phoneWarning(warning))
@@ -335,6 +394,7 @@ export function requestPhone(clientName) {
 	        dispatch(phoneConnectionUpdated(null))
         })
       })
+      .then(console.log("error"))
     }
 }
 
@@ -417,8 +477,7 @@ export function requestConfTerminate(confSid) {
       })
       .then(response => response.json())
       .then( json => {
-        console.log(json)
-        dispatch(requestTaskComplete(taskrouter.reservations[0]))
+        console.log(json, "Terminate conf response")
       })
   }
 }
@@ -451,16 +510,18 @@ export function phoneCall() {
     const { phone, taskrouter } = getState()
     console.log("call clicked to " + phone.dialPadNumber)
 
-    return fetch(urls.baseUrl + 'outbound',
+    return fetch(urls.callOutbound,
       {
         method: "POST",
         headers: {
+        'Accept': 'application/json',
         'Content-Type': 'application/x-www-form-urlencoded'
       },
-        body: "To="+phone.dialPadNumber+
-              "&From="+taskrouter.worker.attributes.phone_number+
-              "&Agent="+taskrouter.worker.friendlyName+
-              "&Token="+taskrouter.worker.token
+        body:
+          "To=" + phone.dialPadNumber + "&" +
+          "From=" + taskrouter.worker.attributes.phone_number + "&" +
+          "Agent=" + taskrouter.worker.friendlyName + "&" +
+          "Token=" + taskrouter.worker.token
       })
       .then(response => response.json())
       .then( json => {
@@ -595,6 +656,11 @@ function videoParticipantConnected(participant) {
 }
 
 const getActivitySid = (activities, activityName) => {
-  return activities.find((activity) =>
-    activity.friendlyName == activityName).sid;
+  let activity = activities.find((activity) =>
+    activity.friendlyName == activityName)
+  if (activity) {
+    return activity.sid
+  } else {
+    return "no-activity-found"
+  }
 }

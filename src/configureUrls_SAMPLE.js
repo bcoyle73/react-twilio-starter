@@ -6,4 +6,8 @@ module.exports = {
   clientToken: baseUrl + 'twilio-client-token',
   conferenceTerminate: baseUrl + 'terminate-conference',
   internalTransfer: baseUrl + 'internal-transfer',
+  conferenceEvents: baseUrl + 'conference-event',
+  callHold: baseUrl + 'hold-call',
+  callOutbound: baseUrl + 'outbound',
+  callOutboundCallback: baseUrl + 'outbound-call-callback',
 }

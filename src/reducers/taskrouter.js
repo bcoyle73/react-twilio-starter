@@ -1,14 +1,25 @@
 
 const taskrouter = (state = {
   isRegistering: false,
+  connectionStatus: "disconnected",
+  workerClient: {},
   worker: {},
   activities: [],
   channels: [],
-  reservations: [],
-  conference: {sid: "", participants: {customer: ""}},
+  tasks: [],
+  error: false,
+  errorMessage: ""
 }, action) => {
-  console.log(action.type)
   switch (action.type) {
+    case 'CONNECTION_UPDATED':
+      return Object.assign({}, state, {
+        connectionStatus: action.status
+      });
+    case 'ERROR_TASKROUTER':
+      return Object.assign({}, state, {
+        error: true,
+        errorMessage: action.message
+      });
     case 'REGISTER_WORKER':
       return Object.assign({}, state, {
         isRegistering: true
@@ -17,6 +28,10 @@ const taskrouter = (state = {
       return Object.assign({}, state, {
         isRegistering: false,
         worker: action.worker
+      });
+    case 'WORKER_CLIENT_UPDATED':
+      return Object.assign({}, state, {
+        workerClient: action.worker
       });
     case 'ACTIVITIES_UPDATED':
       return Object.assign({}, state, {
@@ -30,14 +45,17 @@ const taskrouter = (state = {
       return Object.assign({}, state, {
         reservations: action.reservations
       });
-    case 'RESERVATION_CREATED':
+    case 'TASK_UPDATED':
       return Object.assign({}, state, {
-        reservations: [
-          ...state.reservations,
-          action.reservation
+        tasks: [
+          ...state.tasks,
+          action.task
         ],
-        conference: action.reservation.task.attributes.conference
-      })
+      });
+    case 'TASK_COMPLETED':
+    return Object.assign({}, state, {
+      tasks: state.tasks.filter(task => task.sid !== action.task.sid)
+    });
     default:
       return state;
   }

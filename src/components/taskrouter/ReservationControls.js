@@ -1,5 +1,4 @@
 import React, { PropTypes } from 'react';
-import Button from '../common/Button';
 
 const ReservationControls = ({ onRequestAccept, onRequestDecline}) => (
   <div className="clearfix" >

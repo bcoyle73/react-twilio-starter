@@ -6,13 +6,11 @@ import QueueStats from '../taskrouter/QueueStats';
 //import VideoDisplay from '../video/Video'
 //import VideoPlayer from '../video/VideoPlayer'
 
-const AgentWorkSpace = ({channels = [], currInteraction, participant = {} }) => {
+const AgentWorkSpace = ({channels = [], currInteraction, participant = {}, error, errorMessage }) => {
   let component = null
-  console.log(currInteraction)
 
   switch (currInteraction) {
     case 'video':
-    console.log(participant, "in top compp")
       component = <VideoPlayer key={1} participant={participant} />
       break;
     case 'voice':
@@ -23,6 +21,9 @@ const AgentWorkSpace = ({channels = [], currInteraction, participant = {} }) => 
       break
     default:
       component = <PhoneContainer key={1} />
+  }
+  if (error) {
+    return <h1>Something went wrong. {errorMessage}.</h1>
   }
   return (
     <div id="softphone" className="softphone">
@@ -35,7 +36,7 @@ const AgentWorkSpace = ({channels = [], currInteraction, participant = {} }) => 
 }
 
 AgentWorkSpace.propTypes = {
-  channel: PropTypes.array.isRequired
+
 }
 
 export default AgentWorkSpace

@@ -21,7 +21,7 @@ const KeyPad = ({buttonPress}) => {
 }
 
 KeyPad.propTypes = {
-  onKeyPadNumberClick: React.PropTypes.func.isRequired
+  buttonPress: React.PropTypes.func.isRequired
 }
 
 export default KeyPad
