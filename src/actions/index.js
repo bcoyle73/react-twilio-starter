@@ -138,6 +138,7 @@ export function requestWorker(workerSid) {
       .then(response => response.json())
       .then(json => {
         console.log(json)
+        debugger
         // Register your TaskRouter Worker
         // --params token, debug, connectActivitySid, disconnectActivitySid, closeExistingSession
         // --see https://www.twilio.com/docs/api/taskrouter/worker-js#parameters
@@ -231,16 +232,23 @@ export function requestWorker(workerSid) {
 
           switch (reservation.task.taskChannelUniqueName) {
             case 'voice':
-              const customerLeg = reservation.task.attributes.call_sid
-              console.log(customerLeg, "customer call sid")
-              console.log("Create a conference for agent and customer")
-              var options = {
-                  "ConferenceStatusCallback": urls.conferenceEvents + "?customer_sid=" + customerLeg,
-                  "ConferenceStatusCallbackEvent": "start,leave,join,end",
-                  "EndConferenceOnExit": "false",
-                  "Beep": "false"
+              if (reservation.task.attributes.type == 'transfer') {
+                reservation.call('15304412022',
+                                  'https://absurd-pizzas-9864.twil.io/internal-transfer-callback?conferenceSid=' + reservation.task.attributes.confName,
+                                  null,
+                                  'true')
+              } else {
+                const customerLeg = reservation.task.attributes.call_sid
+                console.log(customerLeg, "customer call sid")
+                console.log("Create a conference for agent and customer")
+                var options = {
+                    "ConferenceStatusCallback": urls.baseUrl + "/conference-events?call+sid=" + customerLeg,
+                    "ConferenceStatusCallbackEvent": "start,leave,join,end",
+                    "EndConferenceOnExit": "false",
+                    "Beep": "false"
+                }
+                reservation.conference(null, null, null, null, null, options)
               }
-              reservation.conference(null, null, null, null, null, options)
               break
             case 'sms':
               reservation.accept()
@@ -257,18 +265,12 @@ export function requestWorker(workerSid) {
               console.log(reservation, "OUTBOUTND")
               reservation.call(
                 from,
-                urls.callOutboundCallback + "?ToPhone="+to+"&FromPhone="+from+"&Sid="+taskSid,
-                null,
+                'https://absurd-pizzas-9864.twil.io/' + "outbound-callback?dialOut=" + to + "&from=" + from + "&sid=" + taskSid,
+                urls.baseUrl + "taskrouter-event",
                 "true",
                 "",
                 "",
-                function(error, reservation) {
-                  if (error) {
-                    console.log(error)
-                    console.log(error.message)
-                  }
-                  console.log(reservation)
-                }
+                urls.baseUrl + "taskrouter-event"
               )
 
               break
@@ -415,6 +417,25 @@ export function phoneHold(confSid, callSid) {
 
   }
 }
+
+export function phoneTransfer(confName) {
+   return (dispatch, getState) => {
+     const { taskrouter } = getState()
+     return fetch(urls.internalTransfer,
+       {
+          headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+         },
+         method: "POST",
+         body: "agent_id=bcoyle&conferenceSid=" + confName + "&token="+taskrouter.worker.token,
+       })
+       .then(response => response.json())
+       .then( json => {
+         console.log(json)
+       })
+   }
+}
+
 
 export function phoneRecord(confSid, currentState) {
   return(dispatch, getState) => {
