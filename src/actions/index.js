@@ -316,7 +316,7 @@ export function requestWorker(workerSid) {
                 console.log(customerLeg, "customer call sid")
                 console.log("Create a conference for agent and customer")
                 var options = {
-                    "ConferenceStatusCallback": urls.baseUrl + "/conference-events?call+sid=" + customerLeg,
+                    "ConferenceStatusCallback": urls.conferenceEvents + "?customer_sid=" + customerLeg,
                     "ConferenceStatusCallbackEvent": "start,leave,join,end",
                     "EndConferenceOnExit": "false",
                     "Beep": "false"
@@ -339,12 +339,18 @@ export function requestWorker(workerSid) {
               console.log(reservation, "OUTBOUTND")
               reservation.call(
                 from,
-                'https://absurd-pizzas-9864.twil.io/' + "outbound-callback?dialOut=" + to + "&from=" + from + "&sid=" + taskSid,
-                urls.baseUrl + "taskrouter-event",
+                urls.callOutboundCallback + "?ToPhone="+to+"&FromPhone="+from+"&Sid="+taskSid,
+                null,
                 "true",
                 "",
                 "",
-                urls.baseUrl + "taskrouter-event"
+                function(error, reservation) {
+                  if (error) {
+                    console.log(error)
+                    console.log(error.message)
+                  }
+                  console.log(reservation)
+                }
               )
 
               break
