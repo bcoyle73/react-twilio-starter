@@ -13,4 +13,5 @@ module.exports = {
   callHold: baseUrl + 'hold-call',
   callOutbound: baseUrl + 'outbound',
   callOutboundCallback: baseUrl + 'outbound-call-callback',
+  internalTransferCallback: baseUrl + 'internal-transfer-callback'
 }
