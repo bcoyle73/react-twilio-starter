@@ -6,7 +6,7 @@ import QueueStats from '../taskrouter/QueueStats';
 //import VideoDisplay from '../video/Video'
 //import VideoPlayer from '../video/VideoPlayer'
 
-const AgentWorkSpace = ({channels = [], currInteraction, participant = {}, error, errorMessage }) => {
+const AgentWorkSpace = ({channels = [], workers = [], workersAvailable, currInteraction, participant = {}, error, errorMessage }) => {
   let component = null
 
   switch (currInteraction) {
@@ -30,7 +30,7 @@ const AgentWorkSpace = ({channels = [], currInteraction, participant = {}, error
       <SimpleAgentStatusControlsContainer />
       <div className="divider"> </div>
       {component}
-      <QueueStats />
+      <QueueStats workersAvailable={workersAvailable}/>
     </div>
   )
 }

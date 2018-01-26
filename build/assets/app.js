@@ -31653,6 +31653,7 @@
 
 	      var url = new URL(window.location.href);
 	      dispatch((0, _actions.requestWorker)(url.searchParams.get("worker")));
+	      dispatch((0, _actions.requestSyncClient)());
 	    }
 	  }, {
 	    key: 'componentWillUnmount',
@@ -31704,6 +31705,7 @@
 	exports.requestAcceptReservation = requestAcceptReservation;
 	exports.requestRefreshReservations = requestRefreshReservations;
 	exports.requestStateChange = requestStateChange;
+	exports.requestSyncClient = requestSyncClient;
 	exports.requestWorker = requestWorker;
 	exports.dialPadUpdated = dialPadUpdated;
 	exports.phoneDeviceUpdated = phoneDeviceUpdated;
@@ -31883,6 +31885,20 @@
 	  };
 	}
 
+	function requestSyncClient() {
+	  return function (dispatch, getState) {
+	    return (0, _isomorphicFetch2.default)(_configureUrls2.default.syncToken, {
+	      method: "GET"
+	    }).then(function (response) {
+	      return response.json();
+	    }).then(function (json) {
+	      console.log('syncClient json =>', json);
+	      var syncClient = new Twilio.Sync.Client(json.token);
+	      console.log('syncClient =>', syncClient);
+	    });
+	  };
+	}
+
 	function requestWorker(workerSid) {
 	  return function (dispatch, getState) {
 	    dispatch(registerWorker());
@@ -31896,11 +31912,11 @@
 	      return response.json();
 	    }).then(function (json) {
 	      console.log(json);
-	      debugger;
 	      // Register your TaskRouter Worker
 	      // --params token, debug, connectActivitySid, disconnectActivitySid, closeExistingSession
 	      // --see https://www.twilio.com/docs/api/taskrouter/worker-js#parameters
 	      var worker = new Twilio.TaskRouter.Worker(json.token, true, null, null, true);
+
 	      dispatch(workerClientUpdated(worker));
 	      console.log(worker);
 	      worker.activities.fetch(function (error, activityList) {
@@ -32899,6 +32915,7 @@
 	module.exports = {
 	  baseUrl: baseUrl,
 	  taskRouterToken: baseUrl + 'taskrouter-client-token',
+	  syncToken: baseUrl + 'sync-token',
 	  clientToken: baseUrl + 'twilio-client-token',
 	  conferenceTerminate: baseUrl + 'terminate-conference',
 	  conferenceEvents: baseUrl + 'conference-event',

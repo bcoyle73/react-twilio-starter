@@ -29,6 +29,20 @@ export function workerUpdated(worker) {
   }
 }
 
+export function workersAvailableUpdated(worker) {
+  return {
+    type: 'WORKERS_AVAILABLE_UPDATED',
+    worker: worker
+  }
+}
+
+export function workerMapUpdated(worker) {
+  return {
+    type: 'WORKER_MAP_UPDATED',
+    worker: worker
+  }
+}
+
 export function workerClientUpdated(worker) {
   return {
     type: 'WORKER_CLIENT_UPDATED',
@@ -125,6 +139,94 @@ export function requestStateChange(newStateName) {
   }
 }
 
+export function requestSyncClient(clientName) {
+  return (dispatch, getState) => {
+    return fetch(urls.syncToken, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      body: "clientName="+clientName
+    })
+    .then(response => response.json())
+    .then(json => {
+        let syncClient = new Twilio.Sync.Client(json.token);
+
+        syncClient.map('current_workers').then(function (map) {
+          map.on('itemAdded', function(worker) {
+            debugger;
+            console.log('key', item.key);
+            console.log('JSON data', item.value);
+          });
+
+          //Note that there are two separate events for map item adds and map item updates:
+          map.on('itemUpdated', function(item) {
+            console.log(item)
+            // const { sync } = getState()
+            // let workers = Object.assign({}, sync.workers);
+            const sid = item.item.descriptor.key
+            const activity = item.item.descriptor.data.activity
+            const workerUpdate = { sid: sid, activity: activity }
+            console.log('WORKER UPDATE =>', workerUpdate)
+            // console.log('WORKERS 1 =>', workers)
+            // for(let i=0; i<workers.length; i++) {
+            //   if(workers[i] == workerSid) {
+            //     workers[i].activityName = item.item.descriptor.data.activity
+            //     workers[i].available = item.item.descriptor.data.activity == 'Idle' ? true : false
+            //   }
+            // }
+
+            // console.log('WORKERS 2 =>', workers)
+
+            // dispatch(workersInitialized(workers));
+            activity == 'Idle' ? dispatch(workerAdded(workerUpdate)) : dispatch(workerRemoved(workerUpdate))
+          });
+        });
+    })
+  }
+}
+
+export function initializeSyncMap() {
+  console.log('INITIALIZING SYNC MAP')
+  return (dispatch, getState) => {
+    return fetch(urls.syncMap, {
+      method: "GET",
+    })
+    .then(response => response.json())
+    .then(json => {
+        console.log('json =>', json)
+    })
+  }
+}
+
+export function initializeWorkers(workerSid) {
+  return (dispatch, getState) => {
+    return fetch(urls.taskRouterToken, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: "workerSid="+workerSid
+      })
+      .then(response => response.json())
+      .then(json => {
+        console.log(json)
+
+        let workspace = new Twilio.TaskRouter.Workspace(json.token);
+        workspace.workers.fetch(
+          function(error, workerList) {
+            if(error) {
+              console.log(error.code);
+              console.log(error.message);
+              return;
+            }
+            dispatch(workersInitialized(workerList.data));
+          }
+        );
+      })
+  }
+}
+
 export function requestWorker(workerSid) {
   return (dispatch, getState) => {
     dispatch(registerWorker())
@@ -138,20 +240,19 @@ export function requestWorker(workerSid) {
       .then(response => response.json())
       .then(json => {
         console.log(json)
-        debugger
         // Register your TaskRouter Worker
         // --params token, debug, connectActivitySid, disconnectActivitySid, closeExistingSession
         // --see https://www.twilio.com/docs/api/taskrouter/worker-js#parameters
         let worker = new Twilio.TaskRouter.Worker(json.token, true, null, null, true )
+
         dispatch(workerClientUpdated(worker))
-        console.log(worker)
         worker.activities.fetch((error, activityList) => {
           if (error) {
             console.log(error, "Activity Fetch Error")
             dispatch(errorTaskRouter("Fetching Activites: " + error.message))
           } else {
             console.log(activityList)
-             dispatch(activitiesUpdated(activityList.data))
+            dispatch(activitiesUpdated(activityList.data))
           }
         })
         worker.fetchChannels((error, channels) => {
@@ -167,9 +268,11 @@ export function requestWorker(workerSid) {
         dispatch(requestRefreshReservations())
 
         worker.on("ready", (worker) => {
+          const clientName = worker.attributes.contact_uri.split(":").pop()
           dispatch(workerConnectionUpdate("ready"))
           dispatch(workerUpdated(worker))
-          dispatch(requestPhone(worker.attributes.contact_uri.split(":").pop()))
+          dispatch(requestPhone(clientName))
+          dispatch(requestSyncClient(clientName))
           //dispatch(requestChat(worker.friendlyName))
           console.log("worker obj", worker)
         })
@@ -289,6 +392,27 @@ function activitiesUpdated(activities) {
   return {
     type: 'ACTIVITIES_UPDATED',
     activities: activities
+  }
+}
+
+function workersInitialized(workers) {
+  return {
+    type: 'WORKERS_INITIALIZED',
+    workers: workers
+  }
+}
+
+function workerAdded(workerUpdate) {
+  return {
+    type: 'WORKER_ADDED',
+    workerUpdate: workerUpdate
+  }
+}
+
+function workerRemoved(workerUpdate) {
+  return {
+    type: 'WORKER_REMOVED',
+    workerUpdate: workerUpdate
   }
 }
 

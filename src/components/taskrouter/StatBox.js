@@ -7,7 +7,7 @@ const StatBox = ({statName, statValue}) => {
 
   return (
     <div className={statusClass}>
-      <div className={numClass}> - </div>
+      <div className={numClass}>{statValue}</div>
       {statName}
     </div>
   )
@@ -22,4 +22,5 @@ StatBox.defaultProps = {
   statName: "Agents",
   statValue: "Queues"
 }
+
 export default StatBox;
