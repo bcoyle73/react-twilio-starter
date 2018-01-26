@@ -522,13 +522,17 @@ export function phoneHold(confSid, callSid) {
 export function phoneTransfer(confName) {
    return (dispatch, getState) => {
      const { taskrouter } = getState()
+
+     // Specify a client name to transfer to here
+     // let agentID = TWILIO CLIENT NAME
+
      return fetch(urls.internalTransfer,
        {
           headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
          },
          method: "POST",
-         body: "agent_id=bcoyle&conferenceSid=" + confName + "&token="+taskrouter.worker.token,
+         body: "agent_id=" + agentID + "&conferenceSid=" + confName + "&token="+taskrouter.worker.token,
        })
        .then(response => response.json())
        .then( json => {
