@@ -29,20 +29,6 @@ export function workerUpdated(worker) {
   }
 }
 
-export function workersAvailableUpdated(worker) {
-  return {
-    type: 'WORKERS_AVAILABLE_UPDATED',
-    worker: worker
-  }
-}
-
-export function workerMapUpdated(worker) {
-  return {
-    type: 'WORKER_MAP_UPDATED',
-    worker: worker
-  }
-}
-
 export function workerClientUpdated(worker) {
   return {
     type: 'WORKER_CLIENT_UPDATED',
@@ -161,24 +147,9 @@ export function requestSyncClient(clientName) {
 
           //Note that there are two separate events for map item adds and map item updates:
           map.on('itemUpdated', function(item) {
-            console.log(item)
-            // const { sync } = getState()
-            // let workers = Object.assign({}, sync.workers);
             const sid = item.item.descriptor.key
             const activity = item.item.descriptor.data.activity
             const workerUpdate = { sid: sid, activity: activity }
-            console.log('WORKER UPDATE =>', workerUpdate)
-            // console.log('WORKERS 1 =>', workers)
-            // for(let i=0; i<workers.length; i++) {
-            //   if(workers[i] == workerSid) {
-            //     workers[i].activityName = item.item.descriptor.data.activity
-            //     workers[i].available = item.item.descriptor.data.activity == 'Idle' ? true : false
-            //   }
-            // }
-
-            // console.log('WORKERS 2 =>', workers)
-
-            // dispatch(workersInitialized(workers));
             activity == 'Idle' ? dispatch(workerAdded(workerUpdate)) : dispatch(workerRemoved(workerUpdate))
           });
         });
@@ -268,7 +239,7 @@ export function requestWorker(workerSid) {
         dispatch(requestRefreshReservations())
 
         worker.on("ready", (worker) => {
-          const clientName = worker.attributes.contact_uri.split(":").pop()
+          const clientName = typeof(worker.attributes.contact_uri) !== 'undefined' ? worker.attributes.contact_uri.split(":").pop() : worker.friendlyName
           dispatch(workerConnectionUpdate("ready"))
           dispatch(workerUpdated(worker))
           dispatch(requestPhone(clientName))
@@ -337,7 +308,7 @@ export function requestWorker(workerSid) {
             case 'voice':
               if (reservation.task.attributes.type == 'transfer') {
                 reservation.call('15304412022',
-                                  'https://absurd-pizzas-9864.twil.io/internal-transfer-callback?conferenceSid=' + reservation.task.attributes.confName,
+                                  urls.internalTransferCallback + '?conferenceSid=' + reservation.task.attributes.confName,
                                   null,
                                   'true')
               } else {
