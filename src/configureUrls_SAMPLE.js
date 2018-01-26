@@ -1,4 +1,4 @@
-let baseUrl = 'https://absurd-pizzas-9864.twil.io/'
+let baseUrl = 'https://YOUR DOMAIN/'
 
 module.exports = {
   baseUrl: baseUrl,
