@@ -19,6 +19,7 @@ class AgentWorkSpaceContainer extends Component {
     const { dispatch } = this.props
     var url = new URL(window.location.href)
     dispatch(requestWorker(url.searchParams.get("worker")))
+    dispatch(initializeSyncMap())
     dispatch(initializeWorkers(url.searchParams.get("worker")))
   }
 
