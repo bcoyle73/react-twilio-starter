@@ -6,10 +6,10 @@ var config = require('../../twilio.config');
 
 router.post('/', function(req, res) {
   const resp = new VoiceResponse();
-  const type = {skill: 'skill_1', accelerator: 'false'};
+  const type = {direction: 'inbound', skill: 'customer_care'};
   const json = JSON.stringify(type);
 
-  resp.enqueueTask({
+  resp.enqueue({
     workflowSid: config.workflowSid,
   }).task({priority: '1'}, json)
 
