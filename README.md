@@ -53,7 +53,7 @@ TWILIO_WORKFLOW_SID=[your default workflow sid]
   * Set taskRouterToken to path you defined
   * Set clientToken to path you defined
   * Set conferenceTerminate to path you defined
-* Running the webpack dev server with **npm start**
+* Run the webpack dev server with **npm start**
 * Go to http://localhost:8080/?worker=[YOUR WORKER SID]
 
 ## Components
