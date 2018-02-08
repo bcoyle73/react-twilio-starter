@@ -43,6 +43,7 @@ TWILIO_WORKFLOW_SID=[your default workflow sid]
 * Unless noted in the comments of the function you will not check the **Check for valid Twilio signature**
 * You do not need to choose the **Event** for each function
 * Click Save for each function and the function will deploy
+* Go to the number you purchased and configure the Voice URL to point to the function you created named **enqueue-call**
 
 ### React Frontend
 * Clone this front end repo
