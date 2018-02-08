@@ -64,14 +64,14 @@
 
 	var _reducers2 = _interopRequireDefault(_reducers);
 
-	var _AgentWorkSpaceContainer = __webpack_require__(505);
+	var _AgentWorkSpaceContainer = __webpack_require__(506);
 
 	var _AgentWorkSpaceContainer2 = _interopRequireDefault(_AgentWorkSpaceContainer);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-	__webpack_require__(527);
-	__webpack_require__(531);
+	__webpack_require__(528);
+	__webpack_require__(532);
 
 	var store = (0, _configureStore2.default)();
 
@@ -31395,12 +31395,17 @@
 
 	var _chat2 = _interopRequireDefault(_chat);
 
+	var _sync = __webpack_require__(505);
+
+	var _sync2 = _interopRequireDefault(_sync);
+
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	var taskRouterApp = (0, _redux.combineReducers)({
 	  taskrouter: _taskrouter2.default,
 	  phone: _phone2.default,
-	  chat: _chat2.default
+	  chat: _chat2.default,
+	  sync: _sync2.default
 	});
 
 	exports.default = taskRouterApp;
@@ -31606,6 +31611,72 @@
 
 /***/ }),
 /* 505 */
+/***/ (function(module, exports) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	var sync = function sync() {
+	  var state = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {
+	    workers: []
+	    // workers_available: 0
+	  };
+	  var action = arguments[1];
+
+	  switch (action.type) {
+	    case 'WORKERS_INITIALIZED':
+	      return Object.assign({}, state, {
+	        workers: filterWorkers(action.workers)
+	      });
+	    case 'WORKER_REMOVED':
+	      return Object.assign({}, state, {
+	        workers: removeWorker(state.workers, action.workerUpdate)
+	      });
+	    case 'WORKER_ADDED':
+	      return Object.assign({}, state, {
+	        workers: addWorker(state.workers, action.workerUpdate)
+	      });
+	    default:
+	      return state;
+	  }
+	};
+
+	function removeWorker(workers, workerUpdate) {
+	  return makeWorkerAvailabile(workers, workerUpdate, false);
+	}
+
+	function makeWorkerAvailabile(workers, workerUpdate, available) {
+	  var newWorkers = workers;
+
+	  newWorkers.map(function (worker) {
+	    if (worker.sid == workerUpdate.sid) {
+	      worker.available = available;
+	      worker.activity = workerUpdate.activity;
+	    }
+	  });
+
+	  return newWorkers;
+	}
+
+	function addWorker(workers, workerUpdate) {
+	  return makeWorkerAvailabile(workers, workerUpdate, true);
+	}
+
+	function filterWorkers(workers) {
+	  var newWorkers = [];
+	  for (var i = 0; i < workers.length; i++) {
+	    var workerObject = { sid: workers[i].sid, activity: workers[i].activityName, available: workers[i].available };
+	    newWorkers.push(workerObject);
+	  }
+	  return newWorkers;
+	}
+
+	exports.default = sync;
+
+/***/ }),
+/* 506 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -31622,9 +31693,9 @@
 
 	var _reactRedux = __webpack_require__(455);
 
-	var _actions = __webpack_require__(506);
+	var _actions = __webpack_require__(507);
 
-	var _AgentWorkSpace = __webpack_require__(510);
+	var _AgentWorkSpace = __webpack_require__(511);
 
 	var _AgentWorkSpace2 = _interopRequireDefault(_AgentWorkSpace);
 
@@ -31653,7 +31724,8 @@
 
 	      var url = new URL(window.location.href);
 	      dispatch((0, _actions.requestWorker)(url.searchParams.get("worker")));
-	      dispatch((0, _actions.requestSyncClient)());
+	      dispatch((0, _actions.initializeSyncMap)());
+	      dispatch((0, _actions.initializeWorkers)(url.searchParams.get("worker")));
 	    }
 	  }, {
 	    key: 'componentWillUnmount',
@@ -31665,13 +31737,15 @@
 	    value: function render() {
 	      var _props = this.props,
 	          channels = _props.channels,
+	          workers = _props.workers,
+	          workersAvailable = _props.workersAvailable,
 	          participant = _props.participant,
 	          error = _props.error,
 	          errorMessage = _props.errorMessage;
 
 	      var current = "default";
 
-	      return _react2.default.createElement(_AgentWorkSpace2.default, { channels: channels, currInteraction: current, participant: participant, error: error, errorMessage: errorMessage });
+	      return _react2.default.createElement(_AgentWorkSpace2.default, { channels: channels, workers: workers, workersAvailable: workersAvailable, currInteraction: current, participant: participant, error: error, errorMessage: errorMessage });
 	    }
 	  }]);
 
@@ -31679,18 +31753,25 @@
 	}(_react.Component);
 
 	var mapStateToProps = function mapStateToProps(state) {
+	  console.log('state.sync.workers =>', state.sync.workers.filter(function (worker) {
+	    return worker.available;
+	  }).length.toString());
 	  return {
 	    channels: state.taskrouter.channels,
 	    participant: state.chat.videoParticipant,
 	    error: state.taskrouter.error,
-	    errorMessage: state.taskrouter.errorMessage
+	    errorMessage: state.taskrouter.errorMessage,
+	    workers: state.sync.workers,
+	    workersAvailable: state.sync.workers.filter(function (worker) {
+	      return worker.available;
+	    }).length.toString()
 	  };
 	};
 
 	exports.default = (0, _reactRedux.connect)(mapStateToProps)(AgentWorkSpaceContainer);
 
 /***/ }),
-/* 506 */
+/* 507 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -31706,6 +31787,8 @@
 	exports.requestRefreshReservations = requestRefreshReservations;
 	exports.requestStateChange = requestStateChange;
 	exports.requestSyncClient = requestSyncClient;
+	exports.initializeSyncMap = initializeSyncMap;
+	exports.initializeWorkers = initializeWorkers;
 	exports.requestWorker = requestWorker;
 	exports.dialPadUpdated = dialPadUpdated;
 	exports.phoneDeviceUpdated = phoneDeviceUpdated;
@@ -31727,11 +31810,11 @@
 	exports.chatNewRequest = chatNewRequest;
 	exports.videoRequest = videoRequest;
 
-	var _isomorphicFetch = __webpack_require__(507);
+	var _isomorphicFetch = __webpack_require__(508);
 
 	var _isomorphicFetch2 = _interopRequireDefault(_isomorphicFetch);
 
-	var _configureUrls = __webpack_require__(509);
+	var _configureUrls = __webpack_require__(510);
 
 	var _configureUrls2 = _interopRequireDefault(_configureUrls);
 
@@ -31885,16 +31968,73 @@
 	  };
 	}
 
-	function requestSyncClient() {
+	function requestSyncClient(clientName) {
 	  return function (dispatch, getState) {
 	    return (0, _isomorphicFetch2.default)(_configureUrls2.default.syncToken, {
+	      method: "POST",
+	      headers: {
+	        "Content-Type": "application/x-www-form-urlencoded"
+	      },
+	      body: "clientName=" + clientName
+	    }).then(function (response) {
+	      return response.json();
+	    }).then(function (json) {
+	      var syncClient = new Twilio.Sync.Client(json.token);
+
+	      syncClient.map('current_workers').then(function (map) {
+	        map.on('itemAdded', function (worker) {
+	          debugger;
+	          console.log('key', item.key);
+	          console.log('JSON data', item.value);
+	        });
+
+	        //Note that there are two separate events for map item adds and map item updates:
+	        map.on('itemUpdated', function (item) {
+	          var sid = item.item.descriptor.key;
+	          var activity = item.item.descriptor.data.activity;
+	          var workerUpdate = { sid: sid, activity: activity };
+	          activity == 'Idle' ? dispatch(workerAdded(workerUpdate)) : dispatch(workerRemoved(workerUpdate));
+	        });
+	      });
+	    });
+	  };
+	}
+
+	function initializeSyncMap() {
+	  console.log('INITIALIZING SYNC MAP');
+	  return function (dispatch, getState) {
+	    return (0, _isomorphicFetch2.default)(_configureUrls2.default.syncMap, {
 	      method: "GET"
 	    }).then(function (response) {
 	      return response.json();
 	    }).then(function (json) {
-	      console.log('syncClient json =>', json);
-	      var syncClient = new Twilio.Sync.Client(json.token);
-	      console.log('syncClient =>', syncClient);
+	      console.log('json =>', json);
+	    });
+	  };
+	}
+
+	function initializeWorkers(workerSid) {
+	  return function (dispatch, getState) {
+	    return (0, _isomorphicFetch2.default)(_configureUrls2.default.taskRouterToken, {
+	      method: "POST",
+	      headers: {
+	        "Content-Type": "application/x-www-form-urlencoded"
+	      },
+	      body: "workerSid=" + workerSid
+	    }).then(function (response) {
+	      return response.json();
+	    }).then(function (json) {
+	      console.log(json);
+
+	      var workspace = new Twilio.TaskRouter.Workspace(json.token);
+	      workspace.workers.fetch(function (error, workerList) {
+	        if (error) {
+	          console.log(error.code);
+	          console.log(error.message);
+	          return;
+	        }
+	        dispatch(workersInitialized(workerList.data));
+	      });
 	    });
 	  };
 	}
@@ -31918,7 +32058,6 @@
 	      var worker = new Twilio.TaskRouter.Worker(json.token, true, null, null, true);
 
 	      dispatch(workerClientUpdated(worker));
-	      console.log(worker);
 	      worker.activities.fetch(function (error, activityList) {
 	        if (error) {
 	          console.log(error, "Activity Fetch Error");
@@ -31940,9 +32079,11 @@
 	      dispatch(requestRefreshReservations());
 
 	      worker.on("ready", function (worker) {
+	        var clientName = typeof worker.attributes.contact_uri !== 'undefined' ? worker.attributes.contact_uri.split(":").pop() : worker.friendlyName;
 	        dispatch(workerConnectionUpdate("ready"));
 	        dispatch(workerUpdated(worker));
-	        dispatch(requestPhone(worker.attributes.contact_uri.split(":").pop()));
+	        dispatch(requestPhone(clientName));
+	        dispatch(requestSyncClient(clientName));
 	        //dispatch(requestChat(worker.friendlyName))
 	        console.log("worker obj", worker);
 	      });
@@ -32006,13 +32147,13 @@
 	        switch (reservation.task.taskChannelUniqueName) {
 	          case 'voice':
 	            if (reservation.task.attributes.type == 'transfer') {
-	              reservation.call('15304412022', 'https://absurd-pizzas-9864.twil.io/internal-transfer-callback?conferenceSid=' + reservation.task.attributes.confName, null, 'true');
+	              reservation.call('15304412022', _configureUrls2.default.internalTransferCallback + '?conferenceSid=' + reservation.task.attributes.confName, null, 'true');
 	            } else {
 	              var customerLeg = reservation.task.attributes.call_sid;
 	              console.log(customerLeg, "customer call sid");
 	              console.log("Create a conference for agent and customer");
 	              var options = {
-	                "ConferenceStatusCallback": _configureUrls2.default.baseUrl + "/conference-events?call+sid=" + customerLeg,
+	                "ConferenceStatusCallback": _configureUrls2.default.conferenceEvents + "?customer_sid=" + customerLeg,
 	                "ConferenceStatusCallbackEvent": "start,leave,join,end",
 	                "EndConferenceOnExit": "false",
 	                "Beep": "false"
@@ -32033,7 +32174,13 @@
 	            var to = reservation.task.attributes.to;
 	            var from = reservation.task.attributes.from;
 	            console.log(reservation, "OUTBOUTND");
-	            reservation.call(from, 'https://absurd-pizzas-9864.twil.io/' + "outbound-callback?dialOut=" + to + "&from=" + from + "&sid=" + taskSid, _configureUrls2.default.baseUrl + "taskrouter-event", "true", "", "", _configureUrls2.default.baseUrl + "taskrouter-event");
+	            reservation.call(from, _configureUrls2.default.callOutboundCallback + "?ToPhone=" + to + "&FromPhone=" + from + "&Sid=" + taskSid, null, "true", "", "", function (error, reservation) {
+	              if (error) {
+	                console.log(error);
+	                console.log(error.message);
+	              }
+	              console.log(reservation);
+	            });
 
 	            break;
 	          default:
@@ -32050,6 +32197,27 @@
 	  return {
 	    type: 'ACTIVITIES_UPDATED',
 	    activities: activities
+	  };
+	}
+
+	function workersInitialized(workers) {
+	  return {
+	    type: 'WORKERS_INITIALIZED',
+	    workers: workers
+	  };
+	}
+
+	function workerAdded(workerUpdate) {
+	  return {
+	    type: 'WORKER_ADDED',
+	    workerUpdate: workerUpdate
+	  };
+	}
+
+	function workerRemoved(workerUpdate) {
+	  return {
+	    type: 'WORKER_REMOVED',
+	    workerUpdate: workerUpdate
 	  };
 	}
 
@@ -32188,12 +32356,15 @@
 	    var _getState5 = getState(),
 	        taskrouter = _getState5.taskrouter;
 
+	    // Specify a client name to transfer to here
+	    // let agentID = TWILIO CLIENT NAME
+
 	    return (0, _isomorphicFetch2.default)(_configureUrls2.default.internalTransfer, {
 	      headers: {
 	        'Content-Type': 'application/x-www-form-urlencoded'
 	      },
 	      method: "POST",
-	      body: "agent_id=bcoyle&conferenceSid=" + confName + "&token=" + taskrouter.worker.token
+	      body: "agent_id=" + agentID + "&conferenceSid=" + confName + "&token=" + taskrouter.worker.token
 	    }).then(function (response) {
 	      return response.json();
 	    }).then(function (json) {
@@ -32426,19 +32597,19 @@
 	};
 
 /***/ }),
-/* 507 */
+/* 508 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	// the whatwg-fetch polyfill installs the fetch() function
 	// on the global object (window or self)
 	//
 	// Return that as the export for use in Webpack, Browserify etc.
-	__webpack_require__(508);
+	__webpack_require__(509);
 	module.exports = self.fetch.bind(self);
 
 
 /***/ }),
-/* 508 */
+/* 509 */
 /***/ (function(module, exports) {
 
 	(function(self) {
@@ -32905,7 +33076,7 @@
 
 
 /***/ }),
-/* 509 */
+/* 510 */
 /***/ (function(module, exports) {
 
 	'use strict';
@@ -32915,17 +33086,21 @@
 	module.exports = {
 	  baseUrl: baseUrl,
 	  taskRouterToken: baseUrl + 'taskrouter-client-token',
+	  taskRouterEvents: baseUrl + 'taskrouter-event',
 	  syncToken: baseUrl + 'sync-token',
+	  syncMap: baseUrl + 'initialize-sync-map',
 	  clientToken: baseUrl + 'twilio-client-token',
 	  conferenceTerminate: baseUrl + 'terminate-conference',
+	  internalTransfer: baseUrl + 'internal-transfer',
 	  conferenceEvents: baseUrl + 'conference-event',
-	  callHold: baseUrl + 'hold-call',
+	  callHold: baseUrl + 'hold',
 	  callOutbound: baseUrl + 'outbound',
-	  callOutboundCallback: baseUrl + 'outbound-call-callback'
+	  callOutboundCallback: baseUrl + 'outbound-call-callback',
+	  internalTransferCallback: baseUrl + 'internal-transfer-callback'
 	};
 
 /***/ }),
-/* 510 */
+/* 511 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -32938,19 +33113,19 @@
 
 	var _react2 = _interopRequireDefault(_react);
 
-	var _SimpleAgentStatusControlsContainer = __webpack_require__(511);
+	var _SimpleAgentStatusControlsContainer = __webpack_require__(512);
 
 	var _SimpleAgentStatusControlsContainer2 = _interopRequireDefault(_SimpleAgentStatusControlsContainer);
 
-	var _MessengerContainer = __webpack_require__(515);
+	var _MessengerContainer = __webpack_require__(516);
 
 	var _MessengerContainer2 = _interopRequireDefault(_MessengerContainer);
 
-	var _PhoneContainer = __webpack_require__(520);
+	var _PhoneContainer = __webpack_require__(521);
 
 	var _PhoneContainer2 = _interopRequireDefault(_PhoneContainer);
 
-	var _QueueStats = __webpack_require__(525);
+	var _QueueStats = __webpack_require__(526);
 
 	var _QueueStats2 = _interopRequireDefault(_QueueStats);
 
@@ -32962,6 +33137,9 @@
 	var AgentWorkSpace = function AgentWorkSpace(_ref) {
 	  var _ref$channels = _ref.channels,
 	      channels = _ref$channels === undefined ? [] : _ref$channels,
+	      _ref$workers = _ref.workers,
+	      workers = _ref$workers === undefined ? [] : _ref$workers,
+	      workersAvailable = _ref.workersAvailable,
 	      currInteraction = _ref.currInteraction,
 	      _ref$participant = _ref.participant,
 	      participant = _ref$participant === undefined ? {} : _ref$participant,
@@ -33002,7 +33180,7 @@
 	      ' '
 	    ),
 	    component,
-	    _react2.default.createElement(_QueueStats2.default, null)
+	    _react2.default.createElement(_QueueStats2.default, { workersAvailable: workersAvailable })
 	  );
 	};
 
@@ -33011,7 +33189,7 @@
 	exports.default = AgentWorkSpace;
 
 /***/ }),
-/* 511 */
+/* 512 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -33022,9 +33200,9 @@
 
 	var _reactRedux = __webpack_require__(455);
 
-	var _actions = __webpack_require__(506);
+	var _actions = __webpack_require__(507);
 
-	var _SimpleAgentStatusControls = __webpack_require__(512);
+	var _SimpleAgentStatusControls = __webpack_require__(513);
 
 	var _SimpleAgentStatusControls2 = _interopRequireDefault(_SimpleAgentStatusControls);
 
@@ -33059,7 +33237,7 @@
 	exports.default = SimpleAgentStatusControlsContainer;
 
 /***/ }),
-/* 512 */
+/* 513 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -33072,11 +33250,11 @@
 
 	var _react2 = _interopRequireDefault(_react);
 
-	var _Button = __webpack_require__(513);
+	var _Button = __webpack_require__(514);
 
 	var _Button2 = _interopRequireDefault(_Button);
 
-	var _TaskControls = __webpack_require__(514);
+	var _TaskControls = __webpack_require__(515);
 
 	var _TaskControls2 = _interopRequireDefault(_TaskControls);
 
@@ -33134,7 +33312,7 @@
 	exports.default = SimpleAgentStatusControls;
 
 /***/ }),
-/* 513 */
+/* 514 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -33201,7 +33379,7 @@
 	exports.default = Button;
 
 /***/ }),
-/* 514 */
+/* 515 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -33251,7 +33429,7 @@
 	exports.default = TaskControls;
 
 /***/ }),
-/* 515 */
+/* 516 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -33264,13 +33442,13 @@
 
 	var _react2 = _interopRequireDefault(_react);
 
-	var _Messenger = __webpack_require__(516);
+	var _Messenger = __webpack_require__(517);
 
 	var _Messenger2 = _interopRequireDefault(_Messenger);
 
 	var _reactRedux = __webpack_require__(455);
 
-	var _actions = __webpack_require__(506);
+	var _actions = __webpack_require__(507);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -33288,7 +33466,7 @@
 	exports.default = MessageBoxContainer;
 
 /***/ }),
-/* 516 */
+/* 517 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -33297,15 +33475,15 @@
 	  value: true
 	});
 
-	var _MessageBox = __webpack_require__(517);
+	var _MessageBox = __webpack_require__(518);
 
 	var _MessageBox2 = _interopRequireDefault(_MessageBox);
 
-	var _MessageEntry = __webpack_require__(518);
+	var _MessageEntry = __webpack_require__(519);
 
 	var _MessageEntry2 = _interopRequireDefault(_MessageEntry);
 
-	var _MessageControl = __webpack_require__(519);
+	var _MessageControl = __webpack_require__(520);
 
 	var _MessageControl2 = _interopRequireDefault(_MessageControl);
 
@@ -33331,7 +33509,7 @@
 	exports.default = Messenger;
 
 /***/ }),
-/* 517 */
+/* 518 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -33374,7 +33552,7 @@
 	exports.default = MessageBox;
 
 /***/ }),
-/* 518 */
+/* 519 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -33402,7 +33580,7 @@
 	exports.default = MessageEntry;
 
 /***/ }),
-/* 519 */
+/* 520 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -33411,7 +33589,7 @@
 	  value: true
 	});
 
-	var _Button = __webpack_require__(513);
+	var _Button = __webpack_require__(514);
 
 	var _Button2 = _interopRequireDefault(_Button);
 
@@ -33438,7 +33616,7 @@
 	exports.default = MessageControl;
 
 /***/ }),
-/* 520 */
+/* 521 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -33451,11 +33629,11 @@
 
 	var _react2 = _interopRequireDefault(_react);
 
-	var _phone = __webpack_require__(521);
+	var _phone = __webpack_require__(522);
 
 	var _phone2 = _interopRequireDefault(_phone);
 
-	var _actions = __webpack_require__(506);
+	var _actions = __webpack_require__(507);
 
 	var _reactRedux = __webpack_require__(455);
 
@@ -33477,6 +33655,8 @@
 	    status: phone.currentCall._status,
 	    isMuted: phone.isMuted,
 	    isHeld: phone.isHeld,
+	    callSid: caller,
+	    confSid: conf,
 	    isRecording: phone.isRecording,
 	    recordingCallSid: phone.recordingLegSid,
 	    task: task,
@@ -33521,7 +33701,7 @@
 	exports.default = PhoneContainer;
 
 /***/ }),
-/* 521 */
+/* 522 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -33530,15 +33710,15 @@
 	  value: true
 	});
 
-	var _NumberEntry = __webpack_require__(522);
+	var _NumberEntry = __webpack_require__(523);
 
 	var _NumberEntry2 = _interopRequireDefault(_NumberEntry);
 
-	var _KeyPad = __webpack_require__(523);
+	var _KeyPad = __webpack_require__(524);
 
 	var _KeyPad2 = _interopRequireDefault(_KeyPad);
 
-	var _CallControl = __webpack_require__(524);
+	var _CallControl = __webpack_require__(525);
 
 	var _CallControl2 = _interopRequireDefault(_CallControl);
 
@@ -33579,7 +33759,7 @@
 	exports.default = Phone;
 
 /***/ }),
-/* 522 */
+/* 523 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -33612,7 +33792,7 @@
 	exports.default = NumberEntry;
 
 /***/ }),
-/* 523 */
+/* 524 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -33660,7 +33840,7 @@
 	exports.default = KeyPad;
 
 /***/ }),
-/* 524 */
+/* 525 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -33669,7 +33849,7 @@
 	  value: true
 	});
 
-	var _Button = __webpack_require__(513);
+	var _Button = __webpack_require__(514);
 
 	var _Button2 = _interopRequireDefault(_Button);
 
@@ -33742,7 +33922,7 @@
 	exports.default = CallControl;
 
 /***/ }),
-/* 525 */
+/* 526 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -33755,22 +33935,19 @@
 
 	var _react2 = _interopRequireDefault(_react);
 
-	var _StatBox = __webpack_require__(526);
+	var _StatBox = __webpack_require__(527);
 
 	var _StatBox2 = _interopRequireDefault(_StatBox);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-	function _objectDestructuringEmpty(obj) { if (obj == null) throw new TypeError("Cannot destructure undefined"); }
-
 	var QueueStats = function QueueStats(_ref) {
-	  _objectDestructuringEmpty(_ref);
-
+	  var workersAvailable = _ref.workersAvailable;
 	  return _react2.default.createElement(
 	    'div',
 	    { id: 'team-status' },
-	    _react2.default.createElement(_StatBox2.default, { statName: 'Agents' }),
-	    _react2.default.createElement(_StatBox2.default, { statName: 'Queues' })
+	    _react2.default.createElement(_StatBox2.default, { statName: 'Agents', statValue: workersAvailable }),
+	    _react2.default.createElement(_StatBox2.default, { statName: 'Queues', statValue: '0' })
 	  );
 	};
 
@@ -33779,7 +33956,7 @@
 	exports.default = QueueStats;
 
 /***/ }),
-/* 526 */
+/* 527 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -33808,7 +33985,7 @@
 	    _react2.default.createElement(
 	      'div',
 	      { className: numClass },
-	      ' - '
+	      statValue
 	    ),
 	    statName
 	  );
@@ -33823,19 +34000,20 @@
 	  statName: "Agents",
 	  statValue: "Queues"
 	};
+
 	exports.default = StatBox;
 
 /***/ }),
-/* 527 */
+/* 528 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	// style-loader: Adds some css to the DOM by adding a <style> tag
 
 	// load the styles
-	var content = __webpack_require__(528);
+	var content = __webpack_require__(529);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	// add the styles to the DOM
-	var update = __webpack_require__(530)(content, {});
+	var update = __webpack_require__(531)(content, {});
 	if(content.locals) module.exports = content.locals;
 	// Hot Module Replacement
 	if(false) {
@@ -33852,10 +34030,10 @@
 	}
 
 /***/ }),
-/* 528 */
+/* 529 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(529)();
+	exports = module.exports = __webpack_require__(530)();
 	// imports
 
 
@@ -33866,7 +34044,7 @@
 
 
 /***/ }),
-/* 529 */
+/* 530 */
 /***/ (function(module, exports) {
 
 	/*
@@ -33922,7 +34100,7 @@
 
 
 /***/ }),
-/* 530 */
+/* 531 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	/*
@@ -34174,16 +34352,16 @@
 
 
 /***/ }),
-/* 531 */
+/* 532 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	// style-loader: Adds some css to the DOM by adding a <style> tag
 
 	// load the styles
-	var content = __webpack_require__(532);
+	var content = __webpack_require__(533);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	// add the styles to the DOM
-	var update = __webpack_require__(530)(content, {});
+	var update = __webpack_require__(531)(content, {});
 	if(content.locals) module.exports = content.locals;
 	// Hot Module Replacement
 	if(false) {
@@ -34200,10 +34378,10 @@
 	}
 
 /***/ }),
-/* 532 */
+/* 533 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(529)();
+	exports = module.exports = __webpack_require__(530)();
 	// imports
 
 
