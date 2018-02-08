@@ -10,7 +10,7 @@ NOTE: This includes a node server backend which includes the functionality curre
 * Create a TaskRouter Workspace - https://www.twilio.com/console/taskrouter/workspaces
 * On the workspace setting page enable **Multitasking**
 * Buy a new phone number
-* Create a new worker and add the following attributes
+* Create a new worker and add the following attributes **be sure to name your worker all lowercase with no spaces**
 ```sh
 {"contact_uri":"client:YOUR WORKER FRIENDLY NAME", "agent_name":"YOUR WORKER FRIENDLY NAME", "phone_number":"A PHONE NUMBER ON YOUR ACCOUNT"}
 ```
