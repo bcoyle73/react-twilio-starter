@@ -4,8 +4,7 @@
   "description": "Starter app for Twilio projects using react and webpack",
   "main": "app.js",
   "scripts": {
-    "dev-server": "webpack-dev-server --inline --progress --colors",
-    "start": "node server.js",
+    "start": "webpack-dev-server --inline --progress --colors",
     "dist": "npm run copy & webpack",
     "copy": "copyfiles -f ./src/index.html ./build",
     "test": "jest"

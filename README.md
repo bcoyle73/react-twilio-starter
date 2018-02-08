@@ -15,7 +15,7 @@ NOTE: This includes a node server backend which includes the functionality curre
 {"contact_uri":"client:YOUR WORKER FRIENDLY NAME", "agent_name":"YOUR WORKER FRIENDLY NAME", "phone_number":"A PHONE NUMBER ON YOUR ACCOUNT"}
 ```
 *note: these attributes are used by the code and workflow in this example. Your production attributes will depend on your own routing rules*
-* Create a new TaskQueue 
+* Create a new TaskQueue
   * Name - name your queue
   * Target Workers - 1==1 *This ensures all workers are available for this queue and is useful for testing*
   * Keep the rest of the defaults
@@ -53,10 +53,8 @@ TWILIO_WORKFLOW_SID=[your default workflow sid]
   * Set taskRouterToken to path you defined
   * Set clientToken to path you defined
   * Set conferenceTerminate to path you defined
-
-
-
-4. Running locally go to http://localhost:8080/?worker=[YOUR WORKER SID]
+* Running the webpack dev server with **npm start**
+* Go to http://localhost:8080/?worker=[YOUR WORKER SID]
 
 ## Components
 Components are organized into Container components and functional presentation components.  Container components contain all of the Twilio specific code along with the actions and reducers.  The presentation componets are functional and only handle layout.  Any front end framework can be used with these components.  Funcitonal components that need a container handler are named the same with the Container component having the Container at the end of the name.

@@ -190,6 +190,7 @@ export function requestWorker(workerSid) {
           dispatch(workerConnectionUpdate("disconnected"))
           dispatch(errorTaskRouter("Web socket disconnection: " + error.message))
           console.log("Websocket has disconnected");
+
         })
         worker.on('reservation.timeout', (reservation) => {
           console.log("Reservation Timed Out")
@@ -254,7 +255,7 @@ export function requestWorker(workerSid) {
               const taskSid = reservation.task.sid
               const to = reservation.task.attributes.to
               const from = reservation.task.attributes.from
-              console.log(reservation, "OUTBOUTND")
+              console.log(reservation, "OUTBOUND")
               reservation.call(
                 from,
                 urls.callOutboundCallback + "?ToPhone="+to+"&FromPhone="+from+"&Sid="+taskSid,
